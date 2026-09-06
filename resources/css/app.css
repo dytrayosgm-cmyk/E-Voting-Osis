@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@source "../../resources/views";
+@source "../../app/Livewire";
+
+@layer base {
+	body {
+		font-size: 15px;
+		line-height: 1.5;
+	}
+
+	button,
+	input,
+	select,
+	textarea {
+		font: inherit;
+	}
+
+	button,
+	a,
+	input[type='checkbox'],
+	input[type='file'] {
+		-webkit-tap-highlight-color: transparent;
+	}
+}
+
+@layer components {
+	.ui-input {
+		@apply rounded-lg border-gray-300 px-3.5 py-3 text-base shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500;
+	}
+
+	.ui-button {
+		@apply inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+	}
+}
