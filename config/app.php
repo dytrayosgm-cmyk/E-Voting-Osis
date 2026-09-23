@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Hosts (Admin Access)
+    |--------------------------------------------------------------------------
+    |
+    | Daftar hostname yang diizinkan mengakses area admin, dipisahkan koma.
+    | Digunakan oleh SecureDomainMiddleware. Jika kosong, semua host diizinkan.
+    |
+    */
+
+    'allowed_hosts' => env('APP_ALLOWED_HOSTS', env('APP_URL', 'http://localhost:8000')),
+
 ];

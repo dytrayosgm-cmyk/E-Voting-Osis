@@ -125,14 +125,14 @@
                         <div class="grid grid-cols-2 gap-px bg-gray-100">
                             <div class="bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
                                 @if ($candidate->chairman_photo)
-                                    <img src="{{ Storage::url($candidate->chairman_photo) }}" class="w-full h-full object-cover" alt="Foto Ketua">
+                                    <img src="{{ Storage::disk('public')->url($candidate->chairman_photo) }}" class="w-full h-full object-cover" alt="Foto Ketua">
                                 @else
                                     <span class="text-xs text-gray-400">Foto Ketua</span>
                                 @endif
                             </div>
                             <div class="bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
                                 @if ($candidate->vice_chairman_photo)
-                                    <img src="{{ Storage::url($candidate->vice_chairman_photo) }}" class="w-full h-full object-cover" alt="Foto Wakil">
+                                    <img src="{{ Storage::disk('public')->url($candidate->vice_chairman_photo) }}" class="w-full h-full object-cover" alt="Foto Wakil">
                                 @else
                                     <span class="text-xs text-gray-400">Foto Wakil</span>
                                 @endif

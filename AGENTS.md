@@ -1,47 +1,48 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# E-Voting OSIS — Panduan Agen
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+Repositori ini berisi aplikasi E-Voting pemilihan Ketua & Wakil OSIS berbasis Laravel 13, Livewire 4, dan Tailwind CSS v4.
 
-## Prerequisites
+## Teknologi Utama
 
-Verify that PHP and Composer are available:
+- **Backend**: PHP 8.3+, Laravel 13, Livewire 4
+- **Frontend**: Blade, Alpine.js (via Livewire), Tailwind CSS v4, Vite
+- **Database**: SQLite (default) atau MySQL
+- **Test**: PHPUnit 12
 
-```sh
-php -v
-composer -V
+## Perintah Penting
+
+```bash
+# Install dependencies
+composer install
+npm install
+
+# Setup database
+php artisan migrate --seed
+
+# Build frontend assets
+npm run build
+
+# Jalankan server
+php artisan serve
+
+# Jalankan test
+php artisan test --compact
 ```
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+## Struktur Kunci
 
-macOS:
+- `app/Livewire/Voter/VotingBooth.php` — Komponen bilik suara (verifikasi NIS + voting)
+- `app/Livewire/Admin/Dashboard.php` — Dashboard admin (statistik, import siswa, reset)
+- `app/Livewire/Admin/CandidateManager.php` — Kelola kandidat (CRUD + foto)
+- `app/Http/Controllers/Admin/` — Auth admin, manajemen admin, export laporan
+- `app/Models/` — Admin, AdminSession, Student, Candidate, Vote, Setting, SystemLog
+- `routes/web.php` — Semua route (voter publik + admin terproteksi)
+- `config/auth.php` — Guard `admin` dengan provider `admins`
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
+## Catatan Penting
 
-Windows PowerShell:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
-
-Linux:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+- `Student::$fillable` sengaja **tidak** menyertakan `has_voted` dan `voted_at`. Gunakan assignment langsung (`$student->has_voted = true; $student->save()`) bukan `$student->update([...])`.
+- `Admin::$fillable` sengaja **tidak** menyertakan `last_login_at` dan `last_login_ip`. Gunakan assignment langsung.
+- Jangan panggil `env()` di luar file `config/`. Gunakan `config()`.
+- `FILESYSTEM_DISK` harus `public` agar foto kandidat bisa diakses browser.
+- `SESSION_DRIVER` dan `CACHE_STORE` harus `file` (tidak ada migration session/cache).

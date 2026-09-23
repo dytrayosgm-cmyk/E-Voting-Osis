@@ -13,6 +13,10 @@ class Student extends Model
         'class',
     ];
 
+    protected $attributes = [
+        'has_voted' => false,
+    ];
+
     /**
      * `has_voted` dan `voted_at` SENGAJA tidak dimasukkan ke $fillable.
      * Kedua kolom ini hanya boleh diubah lewat alur terkontrol di dalam

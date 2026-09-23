@@ -15,6 +15,12 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-md p-7 sm:p-8">
+            @if (session('status'))
+                <div class="mb-5 rounded-lg bg-green-50 px-4 py-3 text-base text-green-700">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-5 rounded-lg bg-red-50 px-4 py-3 text-base text-red-700">
                     {{ $errors->first() }}

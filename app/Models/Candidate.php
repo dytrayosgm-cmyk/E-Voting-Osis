@@ -19,6 +19,11 @@ class Candidate extends Model
         'is_active',
     ];
 
+    protected $attributes = [
+        'vote_count' => 0,
+        'is_active' => true,
+    ];
+
     // vote_count TIDAK fillable — hanya boleh berubah lewat increment()
     // di dalam transaksi vote, tidak pernah lewat form admin.
 

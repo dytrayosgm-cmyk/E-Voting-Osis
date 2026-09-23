@@ -230,10 +230,9 @@ class VotingBooth extends Component
                         'voted_at' => now(),
                     ]);
 
-                    $student->update([
-                        'has_voted' => true,
-                        'voted_at' => now(),
-                    ]);
+                    $student->has_voted = true;
+                    $student->voted_at = now();
+                    $student->save();
 
                     $candidate->increment('vote_count');
 
