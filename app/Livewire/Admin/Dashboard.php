@@ -9,10 +9,12 @@ use App\Models\SystemLog;
 use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+#[Layout('layouts.admin')]
 class Dashboard extends Component
 {
     use WithFileUploads;
@@ -77,10 +79,50 @@ class Dashboard extends Component
             });
     }
 
+    public string $logFilter = 'all'; // all | session | votes | warnings
+
+    #[Computed]
+    public function votedStudentsCount(): int
+    {
+        return Student::where('has_voted', true)->count();
+    }
+
+    #[Computed]
+    public function unvotedStudentsCount(): int
+    {
+        return Student::where('has_voted', false)->count();
+    }
+
+    public function setLogFilter(string $filter): void
+    {
+        $this->logFilter = $filter;
+    }
+
+    public function downloadTemplate()
+    {
+        $csv = "nis,name,class\n2024001,Andi Pratama,XII RPL 1\n2024002,Bunga Citra Lestari,XII AKL 2\n2024003,Citra Kirana,XI OTKP 1\n";
+
+        return response()->streamDownload(function () use ($csv) {
+            echo $csv;
+        }, 'template-dpt-siswa.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
     #[Computed]
     public function recentLogs()
     {
-        return SystemLog::latest()->limit(25)->get();
+        $query = SystemLog::latest();
+
+        if ($this->logFilter === 'session') {
+            $query->whereIn('type', ['session_toggled', 'session_opened', 'session_closed']);
+        } elseif ($this->logFilter === 'votes') {
+            $query->whereIn('type', ['vote_success', 'vote_cast']);
+        } elseif ($this->logFilter === 'warnings') {
+            $query->whereIn('type', ['race_condition_blocked', 'duplicate_attempt', 'nis_not_found']);
+        }
+
+        return $query->limit(25)->get();
     }
 
     /**
@@ -348,6 +390,6 @@ class Dashboard extends Component
 
     public function render()
     {
-        return view('livewire.admin.dashboard');
+        return view('livewire.admin.dashboard')->layout('layouts.admin');
     }
 }

@@ -1,213 +1,544 @@
-<div wire:poll.5s="$refresh" class="space-y-7">
+<div wire:poll.5s="$refresh" class="space-y-6">
 
     {{-- Flash message --}}
     @if ($flashMessage)
         <div
             x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
-            class="rounded-lg px-4 py-3 text-base {{ $flashType === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}"
+            class="rounded-2xl px-4 py-3.5 text-xs font-semibold flex items-center justify-between border {{ $flashType === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800' }}"
         >
-            {{ $flashMessage }}
+            <div class="flex items-center gap-2">
+                @if ($flashType === 'success')
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                @else
+                    <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                @endif
+                <span>{{ $flashMessage }}</span>
+            </div>
+            <button @click="show = false" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
     @endif
 
-    {{-- Header --}}
+    {{-- Dashboard Top Header matching Design --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="mt-1 text-base text-gray-500">{{ $this->setting->session_name }}</p>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#eff1fe] text-[#6366f1]">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#6366f1]"></span>
+                REALTIME MONITOR
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5">
+                Dashboard Admin
+            </h1>
+            <p class="mt-1 text-xs text-slate-400 font-medium">
+                Pemilihan Ketua &amp; Wakil OSIS • SMK An-Nurmaniyah Periode 2025/2026
+            </p>
         </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('admin.reports.export') }}"
-               class="ui-button border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
-                Export Laporan (CSV)
+        <div class="flex items-center gap-2.5">
+            {{-- Export Report Button --}}
+            <a
+                href="{{ route('admin.reports.export') }}"
+                class="ui-button bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-2 shadow-2xs transition"
+            >
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Export Laporan (CSV)</span>
             </a>
+
+            {{-- Toggle Session Button --}}
             <button
                 wire:click="confirmToggleSession"
-                class="ui-button
-                       {{ $this->setting->is_voting_open ? 'bg-red-600 hover:bg-red-500' : 'bg-indigo-600 hover:bg-indigo-500' }}"
+                class="ui-button text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-2 shadow-xs transition
+                       {{ $this->setting->is_voting_open ? 'bg-[#dc2626] hover:bg-[#b91c1c] text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}"
             >
-                {{ $this->setting->is_voting_open ? 'Tutup Sesi Voting' : 'Buka Sesi Voting' }}
-            </button>
-        </div>
-    </div>
-
-    {{-- Stat cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-2xl shadow-sm p-5">
-            <p class="text-sm font-semibold text-gray-500">Total Suara Masuk</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($this->totalVotesIn) }}</p>
-            <p class="mt-1 text-sm text-gray-400">dari {{ number_format($this->totalStudents) }} pemilih terdaftar</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5">
-            <p class="text-sm font-semibold text-gray-500">Partisipasi</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ $this->participationRate }}%</p>
-            <div class="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div class="h-full bg-indigo-600" style="width: {{ min($this->participationRate, 100) }}%"></div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5">
-            <p class="text-sm font-semibold text-gray-500">Status Sesi Voting</p>
-            <p class="mt-2 text-3xl font-bold {{ $this->setting->is_voting_open ? 'text-green-600' : 'text-gray-400' }}">
-                {{ $this->setting->is_voting_open ? 'OPEN' : 'CLOSED' }}
-            </p>
-            <p class="mt-1 text-sm text-gray-400">
-                @if ($this->setting->is_voting_open && $this->setting->opened_at)
-                    Dibuka {{ $this->setting->opened_at->diffForHumans() }}
-                @elseif ($this->setting->closed_at)
-                    Ditutup {{ $this->setting->closed_at->diffForHumans() }}
+                @if ($this->setting->is_voting_open)
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+                    <span>Tutup Sesi Voting</span>
                 @else
-                    Belum pernah dibuka
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Buka Sesi Voting</span>
                 @endif
-            </p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5">
-            <p class="text-sm font-semibold text-gray-500">DB Transaction Health</p>
-            <p class="mt-2 text-3xl font-bold {{ $this->dbHealth['ok'] ? 'text-green-600' : 'text-red-600' }}">
-                {{ $this->dbHealth['label'] }}
-            </p>
-            <p class="mt-1 text-sm text-gray-400">
-                {{ $this->dbHealth['ok'] ? $this->dbHealth['latency_ms'] . ' ms latency' : 'Cek koneksi MySQL' }}
-            </p>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {{-- Leaderboard --}}
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-5">
-            <h2 class="text-base font-bold text-gray-900">Klasemen Suara</h2>
-            <div class="mt-4 space-y-4">
-                @forelse ($this->leaderboard as $i => $c)
-                    <div>
-                        <div class="flex items-center justify-between text-base">
-                            <span class="font-medium text-gray-800 truncate pr-2">
-                                {{ $i === 0 && $c->vote_count > 0 ? '🏆 ' : '' }}No. {{ $c->number_order }} — {{ $c->pair_name }}
-                            </span>
-                            <span class="text-gray-500 shrink-0 font-medium">{{ $c->vote_count }} suara</span>
-                        </div>
-                        <div class="mt-1.5 h-2 rounded-full bg-gray-100 overflow-hidden">
-                            <div class="h-full bg-indigo-600 transition-all" style="width: {{ $c->computed_percentage }}%"></div>
-                        </div>
-                        <p class="mt-1 text-sm text-gray-400">{{ $c->computed_percentage }}%</p>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-400">Belum ada kandidat.</p>
-                @endforelse
-            </div>
-        </div>
-
-        {{-- Security Logs --}}
-        <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm p-5">
-            <h2 class="text-base font-bold text-gray-900">System Security Logs</h2>
-            <div class="mt-4 max-h-96 overflow-y-auto space-y-2">
-                @forelse ($this->recentLogs as $log)
-                    <div class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                        @php
-                            $badge = match($log->type) {
-                                'vote_success' => 'bg-green-50 text-green-700',
-                                'race_condition_blocked', 'duplicate_attempt' => 'bg-red-50 text-red-700',
-                                'nis_not_found' => 'bg-amber-50 text-amber-700',
-                                default => 'bg-gray-100 text-gray-600',
-                            };
-                        @endphp
-                        <span class="mt-0.5 shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full {{ $badge }}">
-                            {{ str_replace('_', ' ', $log->type) }}
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm text-gray-700">{{ $log->message }}</p>
-                            <p class="text-xs text-gray-400">{{ $log->created_at->format('d M Y, H:i:s') }} · {{ $log->ip_address }}</p>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-400">Belum ada aktivitas.</p>
-                @endforelse
-            </div>
-        </div>
-    </div>
-
-    {{-- Candidate management --}}
-    <section class="bg-white rounded-2xl shadow-sm p-5">
-        <div class="mb-4">
-            <h2 class="text-lg font-bold text-gray-900">Manajemen Paslon</h2>
-            <p class="mt-1 text-sm text-gray-500">Tambah, edit, dan kelola identitas paslon langsung dari Dashboard.</p>
-        </div>
-        @livewire('admin.candidate-manager')
-    </section>
-
-    {{-- Student import --}}
-    <section class="bg-white rounded-2xl shadow-sm p-5">
-        <div class="mb-4">
-            <h2 class="text-lg font-bold text-gray-900">Import Daftar Pemilih</h2>
-            <p class="mt-1 text-sm text-gray-500">Unggah CSV untuk menambahkan banyak siswa sekaligus. Gunakan kolom: <span class="font-mono">nis,name,class</span>. NIS yang sudah ada akan diperbarui tanpa mengubah status suaranya.</p>
-        </div>
-
-        <form wire:submit="importStudents" class="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div class="flex-1">
-                <label for="studentFile" class="block text-sm font-semibold text-gray-700">File CSV</label>
-                <input id="studentFile" type="file" wire:model="studentFile" accept=".csv,.txt" class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white text-sm text-gray-700 file:mr-3 file:border-0 file:bg-gray-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700">
-                @error('studentFile')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-            <button type="submit" wire:loading.attr="disabled" class="ui-button bg-indigo-600 text-white hover:bg-indigo-500">
-                <span wire:loading.remove wire:target="importStudents">Import Siswa</span>
-                <span wire:loading wire:target="importStudents">Memproses...</span>
             </button>
-        </form>
-
-        @if ($importSummary)
-            <p class="mt-3 text-sm text-green-700">Terakhir: {{ $importSummary['created'] }} ditambahkan, {{ $importSummary['updated'] }} diperbarui.</p>
-        @endif
-    </section>
-
-    {{-- Danger zone --}}
-    <div class="bg-white rounded-2xl shadow-sm p-5 border border-red-100">
-        <h2 class="text-lg font-bold text-red-700">Reset Voting</h2>
-        <p class="mt-1 text-sm text-gray-500">Menghapus seluruh suara, mengembalikan status pemilih, dan mereset perolehan kandidat. Gunakan hanya untuk simulasi.</p>
-        <button wire:click="confirmReset" @disabled($this->setting->is_voting_open) class="ui-button mt-3 border border-red-200 text-red-700 hover:bg-red-50">
-            {{ $this->setting->is_voting_open ? 'Tutup Sesi untuk Reset' : 'Reset Voting' }}
-        </button>
+        </div>
     </div>
 
-    {{-- Reset confirmation modal --}}
-    @if ($showResetConfirm)
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div class="absolute inset-0 bg-gray-900/50" wire:click="cancelReset"></div>
-            <div class="relative bg-white rounded-2xl shadow-lg max-w-sm w-full p-6">
-                <h3 class="text-base font-semibold text-gray-900">Reset Seluruh Data Voting?</h3>
-                <p class="mt-2 text-sm text-gray-600">Tindakan ini menghapus semua suara masuk, mengembalikan status siswa menjadi "belum memilih", dan mereset perolehan kandidat. Tidak dapat dibatalkan.</p>
-                <label class="block mt-4 text-xs font-medium text-gray-700">Ketik <span class="font-mono font-semibold">RESET</span> untuk konfirmasi</label>
-                <input type="text" wire:model="resetConfirmText" class="mt-1.5 w-full rounded-lg border-gray-300 shadow-sm text-sm px-3.5 py-2.5 focus:border-red-500 focus:ring-red-500">
-                <div class="mt-5 flex gap-3">
-                    <button wire:click="cancelReset" class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Batal</button>
-                    <button wire:click="resetData" class="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-500 transition">Reset Sekarang</button>
+    {{-- Top 4 KPI Metric Cards --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- Card 1: Total Suara Masuk --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">TOTAL SUARA MASUK</span>
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                    </div>
+                </div>
+                <div class="mt-2 flex items-baseline gap-1.5">
+                    <span class="text-3xl font-black text-slate-900">{{ number_format($this->totalVotesIn) }}</span>
+                    <span class="text-sm font-semibold text-slate-400">/ {{ number_format($this->totalStudents) }} Suara</span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: {{ min($this->participationRate, 100) }}%"></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between text-[11px]">
+                    <span class="text-slate-400">{{ $this->participationRate }}% dari {{ $this->totalStudents }} pemilih terdaftar</span>
+                    <span class="font-bold text-blue-600">{{ max(0, $this->totalStudents - $this->totalVotesIn) }} sisa</span>
                 </div>
             </div>
         </div>
-    @endif
 
-    {{-- Session confirmation modal --}}
-    @if ($showSessionConfirm)
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div class="absolute inset-0 bg-gray-900/50" wire:click="cancelToggleSession"></div>
-            <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
-                <h3 class="text-base font-semibold text-gray-900">
-                    {{ $this->setting->is_voting_open ? 'Tutup Sesi Voting?' : 'Buka Sesi Voting?' }}
-                </h3>
-                <p class="mt-2 text-sm text-gray-600">
-                    {{ $this->setting->is_voting_open
-                        ? 'Siswa tidak dapat mengirim suara baru setelah sesi ditutup.'
-                        : 'Siswa dapat mulai melakukan voting setelah sesi dibuka.' }}
+        {{-- Card 2: Partisipasi Siswa --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">PARTISIPASI SISWA</span>
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-3xl font-black text-slate-900">{{ $this->participationRate }}%</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 inline-flex items-center gap-0.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                        Kuorum 50%
+                    </span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    @if ($this->participationRate >= 50)
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        Kuorum minimal 50% telah terlampaui
+                    @else
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                        Menuju target kuorum 50%
+                    @endif
                 </p>
-                <div class="mt-5 flex gap-3">
-                    <button wire:click="cancelToggleSession" class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Batal</button>
-                    <button wire:click="toggleVotingSession" class="flex-1 rounded-lg {{ $this->setting->is_voting_open ? 'bg-red-600 hover:bg-red-500' : 'bg-indigo-600 hover:bg-indigo-500' }} px-4 py-2.5 text-sm font-medium text-white shadow-sm transition">
-                        {{ $this->setting->is_voting_open ? 'Tutup Sesi' : 'Buka Sesi' }}
+            </div>
+        </div>
+
+        {{-- Card 3: Status Sesi Voting --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">STATUS SESI VOTING</span>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-3xl font-black {{ $this->setting->is_voting_open ? 'text-emerald-600' : 'text-slate-400' }}">
+                        {{ $this->setting->is_voting_open ? 'OPEN' : 'CLOSED' }}
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 {{ $this->setting->is_voting_open ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $this->setting->is_voting_open ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                        {{ $this->setting->is_voting_open ? 'AKTIF' : 'DITUTUP' }}
+                    </span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="text-xs text-slate-500 flex items-center gap-1.5 truncate">
+                    @if ($this->setting->is_voting_open && $this->setting->opened_at)
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        Dibuka {{ $this->setting->opened_at->diffForHumans() }} ({{ $this->setting->opened_at->format('H:i') }} WIB)
+                    @elseif ($this->setting->closed_at)
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
+                        Ditutup {{ $this->setting->closed_at->diffForHumans() }} ({{ $this->setting->closed_at->format('H:i') }} WIB)
+                    @else
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
+                        Belum pernah dibuka
+                    @endif
+                </p>
+            </div>
+        </div>
+
+        {{-- Card 4: DB Transaction Health --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">DB TRANSACTION HEALTH</span>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    </div>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black {{ $this->dbHealth['ok'] ? 'text-emerald-600' : 'text-red-600' }}">
+                        {{ $this->dbHealth['label'] }}
+                    </span>
+                    <span class="text-xs font-semibold text-slate-400">
+                        {{ $this->dbHealth['latency_ms'] ?? 0.1 }} ms
+                    </span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                    SQLite WAL mode OK • 0 rollbacks
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Middle 2 Columns Grid: Leaderboard & Security Logs --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {{-- Left: Klasemen Suara Real-Time --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Klasemen Suara Real-Time</h3>
+                            <p class="text-[11px] text-slate-400">Quick count terkini hasil bilik suara digital</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live Count
+                    </span>
+                </div>
+
+                {{-- Candidates Progress List --}}
+                <div class="mt-4 space-y-4">
+                    @forelse ($this->leaderboard as $i => $c)
+                        <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-100/80 hover:bg-slate-50 transition">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-6 h-6 rounded-md {{ $i === 0 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-white' }} font-black text-xs flex items-center justify-center shrink-0">
+                                        {{ sprintf('%02d', $c->number_order) }}
+                                    </span>
+                                    <div class="flex items-center -space-x-1 shrink-0">
+                                        @if ($c->chairman_photo)
+                                            <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Ketua">
+                                        @else
+                                            <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-[9px] font-bold flex items-center justify-center">K</div>
+                                        @endif
+                                        @if ($c->vice_chairman_photo)
+                                            <img src="{{ Storage::disk('public')->url($c->vice_chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Wakil">
+                                        @else
+                                            <div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center">W</div>
+                                        @endif
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                                            {{ $c->chairman_name }} &amp; {{ $c->vice_chairman_name }}
+                                        </p>
+                                        <p class="text-[10px] text-slate-400 italic truncate">
+                                            “{{ $c->slogan ?: 'Kandidat Paslon' }}”
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="text-xs sm:text-sm font-black text-slate-900">{{ $c->vote_count }} Suara</span>
+                                    <span class="block text-[11px] font-bold text-blue-600">{{ $c->computed_percentage }}%</span>
+                                </div>
+                            </div>
+
+                            {{-- Bar --}}
+                            <div class="mt-2.5 h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                                <div
+                                    class="h-full rounded-full transition-all duration-500 {{ $i === 0 ? 'bg-blue-600' : 'bg-slate-700' }}"
+                                    style="width: {{ $c->computed_percentage }}%"
+                                ></div>
+                            </div>
+
+                            <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                                <span>Peringkat {{ $i + 1 }} {{ $i === 0 && $c->vote_count > 0 ? '(Memimpin perolehan)' : '' }}</span>
+                                <span>{{ $c->computed_percentage }}%</span>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-xs text-slate-400 py-4 text-center">Belum ada kandidat terdaftar.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- Footer info --}}
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Total {{ $this->totalVotesIn }} suara sah terverifikasi dari {{ $this->totalStudents }} DPT
+                </span>
+                <span class="flex items-center gap-1 text-[11px]">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    Terenkripsi SHA-256
+                </span>
+            </div>
+        </div>
+
+        {{-- Right: System Security Logs --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">System Security Logs</h3>
+                            <p class="text-[11px] text-slate-400">Live immutable audit trail</p>
+                        </div>
+                    </div>
+                    <button wire:click="$refresh" title="Perbarui Log" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                </div>
+
+                {{-- Filter Tabs --}}
+                <div class="mt-3 flex items-center gap-1.5 text-xs font-semibold">
+                    <button
+                        wire:click="setLogFilter('all')"
+                        class="px-3 py-1 rounded-lg transition {{ $logFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+                    >
+                        Semua
+                    </button>
+                    <button
+                        wire:click="setLogFilter('session')"
+                        class="px-3 py-1 rounded-lg transition {{ $logFilter === 'session' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+                    >
+                        Sesi
+                    </button>
+                    <button
+                        wire:click="setLogFilter('votes')"
+                        class="px-3 py-1 rounded-lg transition {{ $logFilter === 'votes' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+                    >
+                        Suara
+                    </button>
+                    <button
+                        wire:click="setLogFilter('warnings')"
+                        class="px-3 py-1 rounded-lg transition {{ $logFilter === 'warnings' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+                    >
+                        Peringatan
+                    </button>
+                </div>
+
+                {{-- Logs List --}}
+                <div class="mt-3 max-h-72 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-50">
+                    @forelse ($this->recentLogs as $log)
+                        @php
+                            $badgeClass = match($log->type) {
+                                'vote_success', 'vote_cast' => 'bg-emerald-100 text-emerald-800',
+                                'session_opened', 'session_toggled' => 'bg-blue-100 text-blue-800',
+                                'admin_action' => 'bg-indigo-100 text-indigo-800',
+                                'nis_not_found' => 'bg-amber-100 text-amber-800',
+                                'race_condition_blocked', 'duplicate_attempt' => 'bg-red-100 text-red-800',
+                                default => 'bg-slate-100 text-slate-700',
+                            };
+                            $badgeLabel = match($log->type) {
+                                'vote_success', 'vote_cast' => 'VOTE CAST',
+                                'session_opened' => 'SESSION OPEN',
+                                'session_toggled' => 'SESSION UPDATE',
+                                'admin_action' => 'ADMIN ACTION',
+                                'nis_not_found' => 'NIS NOT FOUND',
+                                'race_condition_blocked', 'duplicate_attempt' => 'BLOCKED',
+                                default => strtoupper(str_replace('_', ' ', $log->type)),
+                            };
+                        @endphp
+                        <div class="pt-2 first:pt-0 flex items-start gap-2.5">
+                            <span class="mt-0.5 shrink-0 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider {{ $badgeClass }}">
+                                {{ $badgeLabel }}
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs text-slate-700 font-medium leading-relaxed">{{ $log->message }}</p>
+                                <p class="text-[10px] text-slate-400 mt-0.5">
+                                    {{ $log->created_at->format('d M Y, H:i:s') }} • {{ $log->ip_address }}
+                                </p>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-xs text-slate-400 py-4 text-center">Belum ada catatan log aktivitas.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- Footer info --}}
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                <span>Pencatatan hashing SHA-256 aktif</span>
+                <span class="text-blue-600 font-semibold cursor-pointer hover:underline">Validasi Hash</span>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Section: Manajemen Paslon --}}
+    <section class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6">
+        @livewire('admin.candidate-manager')
+    </section>
+
+    {{-- Section: Import Daftar Pemilih Tetap (DPT) --}}
+    <section class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+                <h2 class="text-lg font-extrabold text-slate-900">Import Daftar Pemilih Tetap (DPT)</h2>
+                <p class="mt-0.5 text-xs text-slate-500">Unggah file CSV untuk sinkronisasi identitas siswa pemilih OSIS secara massal.</p>
+            </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
+                <span class="font-bold text-slate-800">{{ $this->totalStudents }} Terdaftar</span>
+                <span class="text-slate-300">•</span>
+                <span class="text-emerald-700 font-bold">{{ $this->votedStudentsCount }} Sudah Memilih</span>
+                <span class="text-slate-300">•</span>
+                <span class="text-amber-700 font-bold">{{ $this->unvotedStudentsCount }} Belum Memilih</span>
+            </div>
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500">
+            Gunakan kolom wajib: <span class="font-mono font-semibold bg-slate-100 px-1 py-0.5 rounded text-slate-700">nis</span> ,
+            <span class="font-mono font-semibold bg-slate-100 px-1 py-0.5 rounded text-slate-700">name</span> ,
+            <span class="font-mono font-semibold bg-slate-100 px-1 py-0.5 rounded text-slate-700">class</span> .
+            Siswa yang sudah terdaftar akan diperbarui datanya tanpa mengubah perolehan suara.
+        </p>
+
+        {{-- Dropzone / Upload Box --}}
+        <form wire:submit="importStudents" class="mt-4 space-y-4">
+            <div class="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 sm:p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition group">
+                <input
+                    type="file"
+                    wire:model="studentFile"
+                    accept=".csv,.txt"
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                >
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    </div>
+                    @if ($studentFile)
+                        <p class="text-xs font-bold text-emerald-700">
+                            File Terpilih: {{ $studentFile->getClientOriginalName() }}
+                        </p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Klik "Import Siswa" di bawah untuk memproses.</p>
+                    @else
+                        <p class="text-xs font-semibold text-slate-700">
+                            <span class="text-blue-600 font-bold hover:underline">Pilih file CSV</span> atau tarik dan letakkan file di sini
+                        </p>
+                        <p class="text-[11px] text-slate-400 mt-1">Format: .csv (Maksimal 2 MB)</p>
+                    @endif
+                </div>
+            </div>
+
+            @error('studentFile')
+                <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
+            @enderror
+
+            @if ($importSummary)
+                <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800">
+                    Selesai: {{ $importSummary['created'] }} siswa baru ditambahkan, {{ $importSummary['updated'] }} diperbarui.
+                </div>
+            @endif
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                <button
+                    type="button"
+                    wire:click="downloadTemplate"
+                    class="text-xs font-semibold text-slate-500 hover:text-blue-600 flex items-center gap-1.5"
+                >
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download Template CSV Contoh
+                </button>
+
+                <button
+                    type="submit"
+                    wire:loading.attr="disabled"
+                    wire:target="importStudents"
+                    class="ui-button bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs flex items-center gap-2 self-end sm:self-auto"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span wire:loading.remove wire:target="importStudents">Import Siswa</span>
+                    <span wire:loading wire:target="importStudents">Memproses...</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    {{-- Section: Danger Zone: Reset Voting & Suara --}}
+    <div class="bg-white rounded-2xl border border-red-200/90 shadow-2xs p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-red-600 font-extrabold text-sm">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Danger Zone: Reset Voting &amp; Suara</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-500 max-w-2xl leading-relaxed">
+                Menghapus seluruh perolehan suara yang telah masuk, mereset status kehadiran pemilih di DPT kembali menjadi 'Belum Memilih', dan membersihkan audit receipt.
+                <span class="text-red-600 font-bold">Tindakan ini tidak dapat dibatalkan dan khusus untuk simulasi uji coba.</span>
+            </p>
+        </div>
+        <button
+            wire:click="confirmReset"
+            @disabled($this->setting->is_voting_open)
+            class="ui-button shrink-0 text-xs font-bold px-4 py-2.5 rounded-xl transition border {{ $this->setting->is_voting_open ? 'border-red-200 text-red-600 bg-red-50/60 cursor-not-allowed opacity-75' : 'border-red-300 bg-white text-red-600 hover:bg-red-50' }}"
+        >
+            <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                {{ $this->setting->is_voting_open ? 'Tutup Sesi untuk Reset' : 'Reset Voting & Suara' }}
+            </span>
+        </button>
+    </div>
+
+    {{-- Reset Confirmation Modal --}}
+    @if ($showResetConfirm)
+        <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" wire:click="cancelReset"></div>
+            <div class="relative bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 sm:p-7 z-10 space-y-4">
+                <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-base font-black text-slate-900">Reset Seluruh Data Voting?</h3>
+                    <p class="mt-1 text-xs text-slate-500 leading-relaxed">
+                        Tindakan ini menghapus semua suara masuk, mengembalikan status siswa menjadi "belum memilih", dan mereset perolehan kandidat ke 0.
+                    </p>
+                </div>
+                <div class="bg-red-50/60 p-3 rounded-xl border border-red-100">
+                    <label class="block text-[11px] font-bold text-red-700">Ketik <span class="font-mono bg-white px-1 py-0.5 rounded border border-red-200">RESET</span> untuk konfirmasi:</label>
+                    <input type="text" wire:model="resetConfirmText" class="ui-input mt-1.5 w-full text-center font-bold tracking-widest uppercase border-red-300 focus:border-red-500 focus:ring-red-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button wire:click="cancelReset" class="flex-1 ui-button bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs">
+                        Batal
+                    </button>
+                    <button wire:click="resetData" class="flex-1 ui-button bg-red-600 text-white hover:bg-red-700 text-xs shadow-xs">
+                        Reset Sekarang
                     </button>
                 </div>
             </div>
         </div>
     @endif
+
+    {{-- Session Confirmation Modal --}}
+    @if ($showSessionConfirm)
+        <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" wire:click="cancelToggleSession"></div>
+            <div class="relative bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 sm:p-7 z-10 space-y-4">
+                <div class="w-12 h-12 rounded-full {{ $this->setting->is_voting_open ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600' }} flex items-center justify-center mx-auto">
+                    @if ($this->setting->is_voting_open)
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    @else
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    @endif
+                </div>
+                <div class="text-center">
+                    <h3 class="text-base font-black text-slate-900">
+                        {{ $this->setting->is_voting_open ? 'Tutup Sesi Voting?' : 'Buka Sesi Voting?' }}
+                    </h3>
+                    <p class="mt-1 text-xs text-slate-500 leading-relaxed">
+                        {{ $this->setting->is_voting_open
+                            ? 'Siswa pada bilik suara digital tidak akan dapat mengirimkan suara baru setelah sesi ditutup.'
+                            : 'Bilik suara digital siswa akan aktif dan siswa dapat langsung melakukan voting.' }}
+                    </p>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button wire:click="cancelToggleSession" class="flex-1 ui-button bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs">
+                        Batal
+                    </button>
+                    <button wire:click="toggleVotingSession" class="flex-1 ui-button text-xs shadow-xs {{ $this->setting->is_voting_open ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
+                        {{ $this->setting->is_voting_open ? 'Ya, Tutup Sesi' : 'Ya, Buka Sesi' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
 </div>

@@ -110,4 +110,3 @@ class VotingFlowTest extends TestCase
             ->assertSet('errorMessage', 'Sesi voting saat ini sedang ditutup oleh panitia.');
     }
 }
-

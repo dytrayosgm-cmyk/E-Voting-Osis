@@ -12,7 +12,9 @@ class CandidateSeeder extends Seeder
         Candidate::firstOrCreate(['number_order' => 1], [
             'chairman_name' => 'Rafi Aditya',
             'vice_chairman_name' => 'Salsa Amelia',
-            'slogan' => 'Bersama Kita Berkarya',
+            'chairman_photo' => 'candidates/2yIDjK73xYpSZPq766t9cOgJ5HO31Ltv0F2RzrrD.jpg',
+            'vice_chairman_photo' => 'candidates/9M1Ef8rTelQ3Zp7pvglID3S6LaEYZABw4ihPw7WH.jpg',
+            'slogan' => 'Bersama Kita Berkarya, Mandiri dan Berprestasi',
             'vision' => 'Mewujudkan OSIS yang aktif, inovatif, dan dekat dengan seluruh siswa.',
             'mission' => [
                 'Mengaktifkan kembali program mentoring antar angkatan',
@@ -25,7 +27,9 @@ class CandidateSeeder extends Seeder
         Candidate::firstOrCreate(['number_order' => 2], [
             'chairman_name' => 'Bima Nugroho',
             'vice_chairman_name' => 'Citra Wulandari',
-            'slogan' => 'Satu Suara, Satu Tujuan',
+            'chairman_photo' => 'candidates/i5kNseHdGKZtP8PaQkuQtYkvY7zKJf5d7KgprOdJ.jpg',
+            'vice_chairman_photo' => 'candidates/I7XoFbG38b85lNJFhh35X3wlyDGYB4qwhqmKbe82.jpg',
+            'slogan' => 'Satu Suara, Satu Tujuan Memajukan Almamater',
             'vision' => 'Membangun ekosistem sekolah yang inklusif, transparan, dan berprestasi.',
             'mission' => [
                 'Transparansi penuh laporan kegiatan & keuangan OSIS',

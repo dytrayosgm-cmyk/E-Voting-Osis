@@ -25,6 +25,8 @@ class VotingBooth extends Component
 
     public string $studentName = '';
 
+    public string $studentClass = '';
+
     // ---- Fase Pemilihan ----
     public ?int $selectedCandidateId = null;
 
@@ -116,6 +118,7 @@ class VotingBooth extends Component
         // Sukses — tampilkan bilik suara
         $this->studentId = $student->id;
         $this->studentName = $student->name;
+        $this->studentClass = $student->class ?? '';
         $this->verified = true;
         RateLimiter::clear($throttleKey);
     }
@@ -289,6 +292,7 @@ class VotingBooth extends Component
         $this->verified = false;
         $this->studentId = null;
         $this->studentName = '';
+        $this->studentClass = '';
         $this->selectedCandidateId = null;
         $this->showConfirmModal = false;
         $this->isProcessing = false;

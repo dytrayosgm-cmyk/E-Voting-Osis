@@ -52,7 +52,7 @@ class AdminSecurityTest extends TestCase
 
     public function test_secure_domain_middleware_rejects_non_allowed_host(): void
     {
-        $middleware = new SecureDomainMiddleware();
+        $middleware = new SecureDomainMiddleware;
         $request = Request::create('http://evil.test/admin/dashboard', 'GET');
 
         try {

@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Candidate;
 use App\Models\Setting;
 use App\Models\SystemLog;
+use App\Models\Vote;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Validate;
@@ -171,8 +172,34 @@ class CandidateManager extends Component
         }
 
         $c->delete();
-        Storage::disk('public')->delete([$c->chairman_photo, $c->vice_chairman_photo]);
+        $photosToDelete = array_filter([$c->chairman_photo, $c->vice_chairman_photo]);
+        if ($photosToDelete !== []) {
+            Storage::disk('public')->delete($photosToDelete);
+        }
         SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menghapus Paslon No. {$c->number_order}.");
+    }
+
+    public bool $showVisionModal = false;
+
+    public ?Candidate $viewingCandidate = null;
+
+    public bool $overrideLock = false;
+
+    public function viewVisionMission(int $id): void
+    {
+        $this->viewingCandidate = Candidate::findOrFail($id);
+        $this->showVisionModal = true;
+    }
+
+    public function closeVisionMission(): void
+    {
+        $this->showVisionModal = false;
+        $this->viewingCandidate = null;
+    }
+
+    public function toggleOverride(): void
+    {
+        $this->overrideLock = ! $this->overrideLock;
     }
 
     private function resetForm(): void
@@ -188,8 +215,8 @@ class CandidateManager extends Component
 
     private function ensureVotingClosed(): bool
     {
-        if (Setting::current()->is_voting_open) {
-            $this->addError('session', 'Data paslon hanya dapat dikelola saat sesi voting ditutup.');
+        if (Setting::current()->is_voting_open && ! $this->overrideLock) {
+            $this->addError('session', 'Data paslon hanya dapat dikelola saat sesi voting ditutup atau dengan Buka Kunci Sementara.');
             $this->showModal = false;
 
             return false;
@@ -202,6 +229,7 @@ class CandidateManager extends Component
     {
         return view('livewire.admin.candidate-manager', [
             'candidates' => $this->candidates(),
+            'totalVotesIn' => Vote::count(),
         ]);
     }
 }
