@@ -142,17 +142,34 @@
     {{-- Auto-logout on tab/browser close via Beacon API --}}
     <script>
         window.__isInternalNavigation = false;
+
         document.addEventListener('click', function(e) {
             const link = e.target.closest('a');
             if (link && link.href && link.href.startsWith(window.location.origin)) {
                 window.__isInternalNavigation = true;
             }
         });
+
         document.addEventListener('submit', function() {
             window.__isInternalNavigation = true;
         });
 
-        window.addEventListener('pagehide', function() {
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+                window.__isInternalNavigation = true;
+            }
+        });
+
+        document.addEventListener('livewire:navigating', function() {
+            window.__isInternalNavigation = true;
+        });
+
+        window.addEventListener('pagehide', function(e) {
+            // Jangan logout jika halaman hanya dibekukan di memori / BFCache oleh browser
+            if (e.persisted) {
+                return;
+            }
+
             if (!window.__isInternalNavigation) {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 const data = new FormData();
