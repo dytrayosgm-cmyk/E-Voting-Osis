@@ -6,8 +6,8 @@ Repositori ini berisi aplikasi E-Voting pemilihan Ketua & Wakil OSIS berbasis La
 
 - **Backend**: PHP 8.3+, Laravel 13, Livewire 4
 - **Frontend**: Blade, Alpine.js (via Livewire), Tailwind CSS v4, Vite
-- **Database**: SQLite (default) atau MySQL
-- **Test**: PHPUnit 12
+- **Database**: MySQL (default `evoting_osis`) atau SQLite
+- **Test**: PHPUnit 12 (in-memory SQLite)
 
 ## Perintah Penting
 

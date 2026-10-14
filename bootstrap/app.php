@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'secure.domain' => SecureDomainMiddleware::class,
             'auth' => Authenticate::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            'admin/beacon-logout',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

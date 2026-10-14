@@ -45,11 +45,23 @@
                     <input type="password" name="password"
                            class="ui-input w-full text-slate-900 font-semibold" placeholder="••••••••">
                 </div>
-                <div class="flex items-center justify-between text-xs pt-1">
-                    <label class="inline-flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
-                        <input type="checkbox" name="remember" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                        Ingat saya
-                    </label>
+                <div class="space-y-2.5 pt-1 text-xs">
+                    <div class="flex items-center justify-between">
+                        <label class="inline-flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
+                            <input type="checkbox" name="remember" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            Ingat saya
+                        </label>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/90 text-amber-950">
+                        <label class="inline-flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" name="force_login" value="1" class="mt-0.5 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
+                            <span class="text-[11px] leading-tight">
+                                <strong class="font-bold block text-amber-900">Paksa Masuk &amp; Cabut Sesi Lain</strong>
+                                <span class="text-amber-700 font-medium">Centang ini jika sebelumnya tab/browser ditutup tanpa logout agar tidak terhalang deteksi sesi aktif.</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
                 <button type="submit" class="ui-button w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl shadow-xs transition">
                     Masuk ke Control Center

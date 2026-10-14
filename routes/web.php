@@ -26,10 +26,13 @@ Route::prefix('admin')->name('admin.')->middleware('secure.domain')->group(funct
         Route::post('/login', [AdminAuthController::class, 'login']);
     });
 
+    Route::post('/beacon-logout', [AdminAuthController::class, 'beaconLogout'])->name('beacon-logout');
+
     Route::middleware('auth:admin')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', Dashboard::class)->name('dashboard');
         Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+        Route::get('/reports/export-unvoted', [ReportController::class, 'exportUnvotedCsv'])->name('reports.export-unvoted');
 
         Route::get('/management', [AdminManagementController::class, 'index'])->name('management.index');
         Route::get('/management/create', [AdminManagementController::class, 'create'])->name('management.create');

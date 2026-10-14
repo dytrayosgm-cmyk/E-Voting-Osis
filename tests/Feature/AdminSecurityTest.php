@@ -88,4 +88,93 @@ class AdminSecurityTest extends TestCase
         $this->assertNotNull($admin->last_login_at);
         $this->assertNotNull($admin->last_login_ip);
     }
+
+    public function test_admin_can_force_login_and_revoke_existing_session(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Panitia OSIS',
+            'username' => 'admin',
+            'password' => Hash::make('password123'),
+            'role' => 'superadmin',
+        ]);
+
+        $oldSession = AdminSession::create([
+            'admin_id' => $admin->id,
+            'session_id' => 'stuck-session-456',
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Mozilla/5.0',
+            'logged_in_at' => now(),
+            'last_seen_at' => now(),
+            'revoked_at' => null,
+        ]);
+
+        $response = $this->post('/admin/login', [
+            'username' => 'admin',
+            'password' => 'password123',
+            'force_login' => '1',
+        ]);
+
+        $response->assertRedirect('/admin/dashboard');
+
+        $oldSession->refresh();
+        $this->assertNotNull($oldSession->revoked_at);
+    }
+
+    public function test_stale_session_auto_expires_on_admin_login(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Panitia OSIS',
+            'username' => 'admin',
+            'password' => Hash::make('password123'),
+            'role' => 'superadmin',
+        ]);
+
+        $staleSession = AdminSession::create([
+            'admin_id' => $admin->id,
+            'session_id' => 'stale-session-789',
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Mozilla/5.0',
+            'logged_in_at' => now()->subMinutes(10),
+            'last_seen_at' => now()->subMinutes(5),
+            'revoked_at' => null,
+        ]);
+
+        $response = $this->post('/admin/login', [
+            'username' => 'admin',
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect('/admin/dashboard');
+
+        $staleSession->refresh();
+        $this->assertNotNull($staleSession->revoked_at);
+    }
+
+    public function test_beacon_logout_revokes_session_and_logs_out_admin(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Panitia OSIS',
+            'username' => 'admin',
+            'password' => Hash::make('password123'),
+            'role' => 'superadmin',
+        ]);
+
+        $this->post('/admin/login', [
+            'username' => 'admin',
+            'password' => 'password123',
+        ]);
+
+        $this->assertAuthenticated('admin');
+
+        $adminSession = AdminSession::where('admin_id', $admin->id)->whereNull('revoked_at')->first();
+        $this->assertNotNull($adminSession);
+
+        $response = $this->post('/admin/beacon-logout');
+        $response->assertNoContent();
+
+        $adminSession->refresh();
+        $this->assertNotNull($adminSession->revoked_at);
+        $this->assertGuest('admin');
+    }
 }
+

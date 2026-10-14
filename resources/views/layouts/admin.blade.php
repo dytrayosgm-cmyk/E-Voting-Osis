@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Dashboard Admin' }} — E-Voting OSIS SMK An-Nurmaniyah</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/jpeg" href="{{ asset('images/logo-smk.jpg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -35,15 +36,33 @@
                 </a>
             </div>
 
-            {{-- Right: Server Status & Admin Profile --}}
-            <div class="flex items-center gap-3 sm:gap-5">
+            {{-- Right: Server Status, Quick Actions & Admin Profile --}}
+            <div class="flex items-center gap-2.5 sm:gap-3">
                 {{-- Server Live Badge --}}
-                <div class="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-200/80 text-slate-700 shadow-2xs">
+                <div class="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-200/80 text-slate-700 shadow-2xs">
                     <span class="w-3.5 h-3.5 rounded-full bg-emerald-100 flex items-center justify-center">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     </span>
                     <span>Server Live <span class="text-slate-400 font-normal">(0.1ms • WS Aktif)</span></span>
                 </div>
+
+                {{-- Quick Action: Buat Akun Admin (Superadmin Only) --}}
+                @if (auth('admin')->user()?->role === 'superadmin')
+                <a href="{{ route('admin.management.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 transition shadow-2xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    <span class="hidden sm:inline">+ Buat Akun Admin</span>
+                    <span class="sm:hidden">+ Admin</span>
+                </a>
+                @endif
+
+                {{-- Quick Action: Direct Logout Button --}}
+                <form method="POST" action="{{ route('admin.logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" title="Keluar dari akun admin" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200/80 transition shadow-2xs cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </form>
 
                 {{-- User Profile & Dropdown --}}
                 <div x-data="{ open: false }" class="relative">
@@ -117,8 +136,31 @@
     {{-- Footer matching Design --}}
     <footer class="mt-auto py-6 border-t border-slate-200/60 bg-white/50 text-center text-xs text-slate-400">
         <p>© 2026 E-Voting OSIS SMK An-Nurmaniyah • Panitia Pemilihan Siswa Terpadu.</p>
-        <p class="mt-1 text-[11px] text-slate-400/80">Dibangun dengan keamanan terenkripsi tinggi, SQLite Transaction Ledger, dan Audit Trail SHA-256.</p>
+        <p class="mt-1 text-[11px] text-slate-400/80">Dibangun dengan keamanan terenkripsi tinggi, Database Transaction Ledger, dan Audit Trail SHA-256.</p>
     </footer>
+
+    {{-- Auto-logout on tab/browser close via Beacon API --}}
+    <script>
+        window.__isInternalNavigation = false;
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link && link.href && link.href.startsWith(window.location.origin)) {
+                window.__isInternalNavigation = true;
+            }
+        });
+        document.addEventListener('submit', function() {
+            window.__isInternalNavigation = true;
+        });
+
+        window.addEventListener('pagehide', function() {
+            if (!window.__isInternalNavigation) {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const data = new FormData();
+                if (token) data.append('_token', token);
+                navigator.sendBeacon('{{ route('admin.beacon-logout') }}', data);
+            }
+        });
+    </script>
 
     @livewireScripts
 </body>

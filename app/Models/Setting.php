@@ -11,6 +11,8 @@ class Setting extends Model
         'is_voting_open',
         'opened_at',
         'closed_at',
+        'is_finalized',
+        'finalized_at',
     ];
 
     protected function casts(): array
@@ -19,6 +21,8 @@ class Setting extends Model
             'is_voting_open' => 'boolean',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
+            'is_finalized' => 'boolean',
+            'finalized_at' => 'datetime',
         ];
     }
 

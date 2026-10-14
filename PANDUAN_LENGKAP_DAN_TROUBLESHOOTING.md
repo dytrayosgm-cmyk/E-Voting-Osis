@@ -192,6 +192,13 @@ Dashboard dilengkapi pembaruan otomatis setiap 5 detik (*Livewire polling*):
 - **Kartu 3 (Status Sesi Voting)**: Menampilkan durasi sesi telah berjalan sejak dibuka.
 - **Kartu 4 (DB Transaction Health)**: Menampilkan kesehatan respon database dan latensi query (di bawah 50 ms bertanda hijau *Sehat*).
 - **Klasemen Suara Real-Time**: Bar progres persentase perolehan masing-masing kandidat paslon secara live.
+- **Monitoring Pemilih (DPT Real-Time)**:
+  - Tab status: **Belum Memilih**, **Sudah Memilih**, dan **Semua**.
+  - **Filter Angkatan / Tingkat**: Filter instan untuk siswa Kelas X (10), Kelas XI (11), atau Kelas XII (12).
+  - **Filter Kelas & Pencarian**: Cari berdasarkan NIS, nama siswa, atau spesifik per kelas.
+  - **Pengaturan Baris & Paginasi**: Tampilkan 5, 10, 25, 50, hingga 100 baris per halaman dengan kontrol navigasi halaman bernomor rapi.
+  - **Unduh Siswa Belum Memilih (CSV)**: Tombol unduh cepat untuk mempermudah petugas jemput bola ke kelas-kelas.
+  - **Hapus Seluruh DPT**: Tombol merah di header tabel untuk mengosongkan seluruh data DPT siswa beserta riwayat suara saat akan memulai siklus pemilihan baru (dilindungi konfirmasi modal dan hanya dapat dijalankan saat sesi voting CLOSED).
 - **System Security Logs**: Riwayat audit real-time dengan filter:
   - Tab **Semua**: Seluruh kejadian sistem.
   - Tab **Sesi**: Pembukaan dan penutupan sesi voting.
@@ -315,13 +322,15 @@ Berikut adalah daftar lengkap kemungkinan error, akar masalah, dan langkah perba
 
 ### 6.2 Kendala Autentikasi & Akun Admin
 
-#### Error: "Akun admin ini sedang aktif di sesi lain. Logout sesi yang aktif terlebih dahulu."
-- **Penyebab**: Sistem mendeteksi akun admin tersebut masih login di browser atau laptop lain (*Concurrent login protection*).
-- **Solusi**:
-  1. Lakukan logout dari browser/perangkat sebelumnya.
-  2. Jika laptop sebelumnya mati atau browser terlanjur ditutup paksa, buka terminal di laptop server dan jalankan perintah tinker berikut untuk mencabut sesi lama:
+#### Error: "Akun admin ini terdeteksi sedang aktif di sesi/tab lain..."
+- **Penyebab**: Sistem mendeteksi akun admin masih tercatat aktif di browser/tab lain (*Concurrent session protection*). Ini biasanya terjadi jika tab ditutup mendadak tanpa menekan tombol Logout.
+- **Solusi Praktis & Cepat**:
+  1. Pada form login admin (`/admin/login`), **centang opsi `[✓] Paksa Masuk & Cabut Sesi Lain`**, lalu klik tombol **Masuk ke Control Center**. Sistem akan langsung mencabut sesi lama dan mengizinkan Anda masuk.
+  2. Sistem juga secara otomatis mencabut sesi lama yang tidak ada aktivitas lebih dari 2 menit (*auto-expire*).
+  3. Sistem telah dilengkapi fitur **Auto-Logout via Beacon API** yang otomatis keluar saat tab/jendela browser ditutup.
+  4. (Alternatif darurat via terminal):
      ```bash
-     php artisan tinker --execute="App\Models\AdminSession::where('admin_id', App\Models\Admin::where('username', 'admin')->value('id'))->update(['revoked_at' => now()]);"
+     php artisan tinker --execute="App\Models\AdminSession::whereNull('revoked_at')->update(['revoked_at' => now()]); echo 'Semua sesi admin lama berhasil dicabut.';"
      ```
 
 #### Lupa Password Admin / Akun Terkunci

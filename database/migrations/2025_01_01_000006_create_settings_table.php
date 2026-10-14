@@ -19,6 +19,8 @@ return new class extends Migration
             $table->boolean('is_voting_open')->default(false);
             $table->timestamp('opened_at')->nullable();
             $table->timestamp('closed_at')->nullable();
+            $table->boolean('is_finalized')->default(false);
+            $table->timestamp('finalized_at')->nullable();
             $table->timestamps();
         });
     }

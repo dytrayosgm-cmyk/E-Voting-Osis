@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\AdminSession;
 use App\Models\Candidate;
 use App\Models\Setting;
 use App\Models\Student;
@@ -13,15 +14,20 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 #[Layout('layouts.admin')]
 class Dashboard extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, WithPagination;
 
     public bool $showResetConfirm = false;
 
     public bool $showSessionConfirm = false;
+
+    public bool $showFinalizeConfirm = false;
+
+    public bool $showClearStudentsConfirm = false;
 
     public string $resetConfirmText = '';
 
@@ -30,6 +36,17 @@ class Dashboard extends Component
     public ?string $flashType = null; // success | danger
 
     public ?array $importSummary = null;
+
+    // Voter monitoring state
+    public string $voterTab = 'unvoted'; // unvoted | voted | all
+
+    public string $voterSearch = '';
+
+    public string $voterGrade = ''; // '' | 'X' | 'XI' | 'XII'
+
+    public string $voterClass = '';
+
+    public int $voterPerPage = 10;
 
     #[Validate('nullable|file|mimes:csv,txt|max:5120')]
     public $studentFile;
@@ -80,6 +97,154 @@ class Dashboard extends Component
     }
 
     public string $logFilter = 'all'; // all | session | votes | warnings
+
+    public function updatedVoterTab(): void
+    {
+        $this->resetPage('voterPage');
+    }
+
+    public function updatedVoterSearch(): void
+    {
+        $this->resetPage('voterPage');
+    }
+
+    public function updatedVoterGrade(): void
+    {
+        $this->voterClass = '';
+        $this->resetPage('voterPage');
+    }
+
+    public function updatedVoterClass(): void
+    {
+        $this->resetPage('voterPage');
+    }
+
+    public function updatedVoterPerPage(): void
+    {
+        $this->resetPage('voterPage');
+    }
+
+    #[Computed]
+    public function availableClasses()
+    {
+        $query = Student::query()
+            ->whereNotNull('class')
+            ->where('class', '!=', '')
+            ->distinct();
+
+        if ($this->voterGrade === 'X') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'X %')
+                    ->orWhere('class', 'like', 'X-%')
+                    ->orWhere('class', 'like', '10 %')
+                    ->orWhere('class', 'like', '10-%')
+                    ->orWhere('class', '=', 'X')
+                    ->orWhere('class', '=', '10');
+            });
+        } elseif ($this->voterGrade === 'XI') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'XI %')
+                    ->orWhere('class', 'like', 'XI-%')
+                    ->orWhere('class', 'like', '11 %')
+                    ->orWhere('class', 'like', '11-%')
+                    ->orWhere('class', '=', 'XI')
+                    ->orWhere('class', '=', '11');
+            });
+        } elseif ($this->voterGrade === 'XII') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'XII %')
+                    ->orWhere('class', 'like', 'XII-%')
+                    ->orWhere('class', 'like', '12 %')
+                    ->orWhere('class', 'like', '12-%')
+                    ->orWhere('class', '=', 'XII')
+                    ->orWhere('class', '=', '12');
+            });
+        }
+
+        return $query->orderBy('class')->pluck('class');
+    }
+
+    #[Computed]
+    public function voterStudents()
+    {
+        $query = Student::query();
+
+        if ($this->voterTab === 'unvoted') {
+            $query->where('has_voted', false);
+        } elseif ($this->voterTab === 'voted') {
+            $query->where('has_voted', true);
+        }
+
+        if ($this->voterGrade === 'X') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'X %')
+                    ->orWhere('class', 'like', 'X-%')
+                    ->orWhere('class', 'like', '10 %')
+                    ->orWhere('class', 'like', '10-%')
+                    ->orWhere('class', '=', 'X')
+                    ->orWhere('class', '=', '10');
+            });
+        } elseif ($this->voterGrade === 'XI') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'XI %')
+                    ->orWhere('class', 'like', 'XI-%')
+                    ->orWhere('class', 'like', '11 %')
+                    ->orWhere('class', 'like', '11-%')
+                    ->orWhere('class', '=', 'XI')
+                    ->orWhere('class', '=', '11');
+            });
+        } elseif ($this->voterGrade === 'XII') {
+            $query->where(function ($q) {
+                $q->where('class', 'like', 'XII %')
+                    ->orWhere('class', 'like', 'XII-%')
+                    ->orWhere('class', 'like', '12 %')
+                    ->orWhere('class', 'like', '12-%')
+                    ->orWhere('class', '=', 'XII')
+                    ->orWhere('class', '=', '12');
+            });
+        }
+
+        if ($this->voterClass !== '') {
+            $query->where('class', $this->voterClass);
+        }
+
+        if (trim($this->voterSearch) !== '') {
+            $search = trim($this->voterSearch);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('nis', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->orderBy('class')->orderBy('name')->paginate((int) $this->voterPerPage, ['*'], 'voterPage');
+    }
+
+    #[Computed]
+    public function winner(): ?Candidate
+    {
+        if ($this->totalVotesIn === 0) {
+            return null;
+        }
+
+        $top = Candidate::orderByDesc('vote_count')->first();
+        if ($top) {
+            $top->computed_percentage = $top->percentage($this->totalVotesIn);
+        }
+
+        return $top;
+    }
+
+    #[Computed]
+    public function isTie(): bool
+    {
+        if ($this->totalVotesIn === 0) {
+            return false;
+        }
+
+        $topTwo = Candidate::orderByDesc('vote_count')->take(2)->get();
+
+        return $topTwo->count() === 2 && $topTwo[0]->vote_count === $topTwo[1]->vote_count && $topTwo[0]->vote_count > 0;
+    }
 
     #[Computed]
     public function votedStudentsCount(): int
@@ -158,6 +323,8 @@ class Dashboard extends Component
             'is_voting_open' => $newState,
             'opened_at' => $newState ? now() : $setting->opened_at,
             'closed_at' => ! $newState ? now() : null,
+            'is_finalized' => $newState ? false : $setting->is_finalized,
+            'finalized_at' => $newState ? null : $setting->finalized_at,
         ]);
 
         SystemLog::record(
@@ -178,6 +345,97 @@ class Dashboard extends Component
     public function cancelToggleSession(): void
     {
         $this->showSessionConfirm = false;
+    }
+
+    public function confirmFinalizeSession(): void
+    {
+        $this->showFinalizeConfirm = true;
+    }
+
+    public function cancelFinalizeSession(): void
+    {
+        $this->showFinalizeConfirm = false;
+    }
+
+    public function finalizeSession(): void
+    {
+        $setting = Setting::current();
+        $setting->update([
+            'is_voting_open' => false,
+            'closed_at' => now(),
+            'is_finalized' => true,
+            'finalized_at' => now(),
+        ]);
+
+        $winnerTitle = $this->winner ? "Paslon No. {$this->winner->number_order} ({$this->winner->chairman_name} & {$this->winner->vice_chairman_name})" : 'Belum ada suara';
+
+        SystemLog::record(
+            SystemLog::TYPE_SESSION_CLOSED,
+            "Sesi pemilihan OSIS RESMI DIAKHIRI oleh admin. Paslon Pemenang: {$winnerTitle}.",
+        );
+
+        $this->showFinalizeConfirm = false;
+        unset($this->setting);
+        unset($this->winner);
+        $this->flash('Sesi pemilihan resmi diakhiri dan Paslon Pemenang Terpilih telah diumumkan!', 'success');
+    }
+
+    public function reopenElection(): void
+    {
+        $setting = Setting::current();
+        $setting->update([
+            'is_finalized' => false,
+            'finalized_at' => null,
+        ]);
+
+        SystemLog::record(
+            SystemLog::TYPE_SESSION_TOGGLED,
+            'Status finalisasi hasil pemilihan dibuka kembali oleh admin.',
+        );
+
+        unset($this->setting);
+        unset($this->winner);
+        $this->flash('Status finalisasi dibuka kembali. Anda dapat mengaktifkan kembali bilik suara.', 'success');
+    }
+
+    public function confirmClearStudents(): void
+    {
+        $this->showClearStudentsConfirm = true;
+    }
+
+    public function cancelClearStudents(): void
+    {
+        $this->showClearStudentsConfirm = false;
+    }
+
+    public function clearAllStudents(): void
+    {
+        if ($this->setting->is_voting_open) {
+            $this->flash('Tutup sesi voting terlebih dahulu sebelum menghapus data pemilih.', 'danger');
+            $this->showClearStudentsConfirm = false;
+
+            return;
+        }
+
+        $count = Student::count();
+
+        DB::transaction(function () {
+            Vote::query()->delete();
+            Student::query()->delete();
+            Candidate::query()->update(['vote_count' => 0]);
+        });
+
+        SystemLog::record(
+            SystemLog::TYPE_DATA_RESET,
+            "Admin menghapus seluruh {$count} data siswa pemilih (DPT) dari sistem.",
+        );
+
+        $this->showClearStudentsConfirm = false;
+        $this->resetPage('voterPage');
+        unset($this->totalStudents);
+        unset($this->votedStudentsCount);
+        unset($this->unvotedStudentsCount);
+        $this->flash("Berhasil menghapus seluruh {$count} data pemilih (DPT). Data siap diimpor untuk pemilihan baru.", 'success');
     }
 
     public function confirmReset(): void
@@ -219,6 +477,8 @@ class Dashboard extends Component
                 'is_voting_open' => false,
                 'opened_at' => null,
                 'closed_at' => now(),
+                'is_finalized' => false,
+                'finalized_at' => null,
             ]);
         });
 
@@ -390,6 +650,13 @@ class Dashboard extends Component
 
     public function render()
     {
+        if (auth('admin')->check()) {
+            AdminSession::query()
+                ->where('admin_id', auth('admin')->id())
+                ->where('session_id', session()->getId())
+                ->update(['last_seen_at' => now()]);
+        }
+
         return view('livewire.admin.dashboard')->layout('layouts.admin');
     }
 }

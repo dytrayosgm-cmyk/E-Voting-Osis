@@ -48,16 +48,32 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        $existing = AdminSession::query()
-            ->where('admin_id', $admin->id)
-            ->whereNull('revoked_at')
-            ->first();
+        if ($request->boolean('force_login')) {
+            AdminSession::query()
+                ->where('admin_id', $admin->id)
+                ->whereNull('revoked_at')
+                ->update(['revoked_at' => now(), 'last_seen_at' => now()]);
+            $existing = null;
+        } else {
+            $existing = AdminSession::query()
+                ->where('admin_id', $admin->id)
+                ->whereNull('revoked_at')
+                ->first();
 
-        if ($existing && $existing->session_id !== $request->session()->getId()) {
-            RateLimiter::hit($throttleKey, 60);
-            throw ValidationException::withMessages([
-                'username' => 'Akun admin ini sedang aktif di sesi lain. Logout sesi yang aktif terlebih dahulu.',
-            ]);
+            if ($existing) {
+                $lastActivity = $existing->last_seen_at ?? $existing->logged_in_at;
+                if ($lastActivity && $lastActivity->lt(now()->subMinutes(2))) {
+                    $existing->update(['revoked_at' => now()]);
+                    $existing = null;
+                }
+            }
+
+            if ($existing && $existing->session_id !== $request->session()->getId()) {
+                RateLimiter::hit($throttleKey, 60);
+                throw ValidationException::withMessages([
+                    'username' => 'Akun admin ini terdeteksi sedang aktif di sesi/tab lain. Jika Anda sebelumnya menutup tab tanpa logout, centang opsi "Paksa Masuk & Cabut Sesi Lain" di bawah.',
+                ]);
+            }
         }
 
         if (! Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
@@ -115,4 +131,32 @@ class AdminAuthController extends Controller
 
         return redirect()->route('admin.login');
     }
+
+    public function beaconLogout(Request $request): \Illuminate\Http\Response
+    {
+        $admin = Auth::guard('admin')->user();
+        if ($admin) {
+            $sessionId = $request->session()->getId();
+            $updated = AdminSession::query()
+                ->where('admin_id', $admin->id)
+                ->where('session_id', $sessionId)
+                ->update(['revoked_at' => now(), 'last_seen_at' => now()]);
+
+            if ($updated === 0) {
+                AdminSession::query()
+                    ->where('admin_id', $admin->id)
+                    ->whereNull('revoked_at')
+                    ->update(['revoked_at' => now(), 'last_seen_at' => now()]);
+            }
+
+            SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin '{$admin->username}' menutup browser/tab (auto-logout).");
+
+            Auth::guard('admin')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return response()->noContent();
+    }
 }
+

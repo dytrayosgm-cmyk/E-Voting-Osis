@@ -19,6 +19,10 @@ class SystemLog extends Model
 
     public const TYPE_SESSION_TOGGLED = 'session_toggled';
 
+    public const TYPE_SESSION_OPENED = 'session_opened';
+
+    public const TYPE_SESSION_CLOSED = 'session_closed';
+
     public const TYPE_DATA_RESET = 'data_reset';
 
     protected $fillable = [

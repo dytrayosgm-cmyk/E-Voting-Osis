@@ -59,9 +59,12 @@ Sistem memisahkan dua peran utama secara tegas: **Pemilih (Siswa)** yang berinte
    - 4 Kartu KPI: Total Suara Masuk, Persentase Partisipasi vs Kuorum 50%, Status Sesi, dan Latensi DB Health.
    - Klasemen Suara Real-Time dengan bar progres, ranking, dan badge enkripsi SHA-256.
    - Live Security Audit Trail dengan filter tab (`Semua`, `Sesi`, `Suara`, `Peringatan`).
-5. **Tutup Sesi & Export Laporan**:
-   - Tutup sesi voting segera setelah waktu habis untuk mengunci hak suara.
-   - Klik **Export Laporan (CSV)** untuk mengunduh rekapitulasi data kehadiran dan suara pemilih.
+   - **Monitoring Pemilih (DPT)**: Pantau daftar siswa yang belum dan sudah memilih secara real-time, cari per NIS/nama, filter per kelas, dan unduh daftar siswa belum memilih (CSV) untuk pemanggilan panitia di kelas.
+5. **Akhiri Sesi & Pengumuman Pemenang**:
+   - Klik **Akhiri Sesi & Umumkan Pemenang** untuk menyelesaikan pemungutan suara secara resmi.
+   - Sistem akan langsung menampilkan **Kartu Pemenang Resmi (Golden Spotlight)** beraksen emas dengan foto Ketua & Wakil terpilih, persentase kemenangan, dan efek animasi selebrasi *confetti*.
+6. **Export Berita Acara & Rekapitulasi**:
+   - Klik **Export Laporan (CSV)** untuk mengunduh dokumen Berita Acara resmi lengkap dengan rekapitulasi suara riil per paslon dari tabel `votes`, statistik persentase kehadiran DPT, serta audit detail setiap suara masuk.
 
 ---
 
@@ -114,7 +117,7 @@ tests/Feature/                    25 automated feature tests (100% lulus)
 | `Student` | `students` | DPT siswa, NIS unik, nama, kelas. Field `has_voted` dan `voted_at` diisi via direct assignment. |
 | `Candidate` | `candidates` | Nomor urut, identitas ketua & wakil, foto, slogan, visi, misi, status aktif. Field `vote_count` diisi via `increment()`. |
 | `Vote` | `votes` | Satu record suara per siswa (menyimpan referensi kandidat, waktu, dan IP bilik suara). |
-| `Setting` | `settings` | Konfigurasi status sesi voting (`is_voting_open`, `opened_at`, `closed_at`). |
+| `Setting` | `settings` | Konfigurasi status sesi voting (`is_voting_open`, `opened_at`, `closed_at`, `is_finalized`, `finalized_at`). |
 | `SystemLog` | `system_logs` | Audit trail immutable seluruh aktivitas pemilihan, verifikasi NIS, dan aksi administratif. |
 
 ---
@@ -162,9 +165,12 @@ npm install
 cp .env.example .env
 php artisan key:generate
 
-# 4. Siapkan database SQLite dan jalankan seeder
-touch database/database.sqlite
+# 4. Pastikan layanan MySQL aktif (misal di XAMPP / LAMPP: sudo /opt/lampp/lampp startmysql)
+# Database default: evoting_osis (MySQL localhost:3306)
+# Jalankan migrasi dan seeder awal:
 php artisan migrate --seed
+
+# (Alternatif jika ingin SQLite: ganti DB_CONNECTION=sqlite di .env dan buat database/database.sqlite)
 
 # 5. Hubungkan penyimpanan storage publik (untuk foto kandidat)
 php artisan storage:link
