@@ -29,21 +29,25 @@ Sistem memisahkan dua peran utama secara tegas: **Pemilih (Siswa)** yang berinte
 ### Alur Siswa (Bilik Suara Digital)
 
 ```text
-[Buka /] ──> [Langkah 1: Input NIS] ──> [Validasi NIS & Sesi] ──> [Langkah 2: Tampil Paslon]
-                                                                            │
-[Auto-Reset 4s] <── [Layar Sukses] <── [1 Transaksi DB: Vote & Log] <───────┘
+[Buka /] ──> [Langkah 1: Input NIS + Token 4 Karakter] ──> [Validasi NIS & unique_code di voters] ──> [Langkah 2: Tampil Paslon]
+                                                                                                            │
+[Auto-Reset 4s] <── [Layar Sukses] <── [1 Transaksi DB: Vote & Secret Ballot Log] <────────────────────────┘
 ```
 
 1. **Siswa membuka `/`** pada perangkat bilik suara.
-2. **Langkah 1 (Verifikasi Identitas)**: Masukkan NIS/NIK sesuai yang terdaftar pada Daftar Pemilih Tetap (DPT).
-3. **Sistem memeriksa NIS**: Memastikan status `has_voted` bernilai `false`, dan memverifikasi status sesi voting dalam kondisi `OPEN`.
-4. **Langkah 2 (Pilih Pasangan Calon)**: Menampilkan kartu identitas siswa terverifikasi dengan badge hak suara aktif, foto berdampingan Ketua & Wakil, nomor urut, slogan, visi, dan program misi paslon.
+2. **Langkah 1 (Verifikasi Identitas & Token)**: Masukkan kombinasi **NIS** dan **Token/Kode Unik 4 karakter** (`unique_code`) yang diberikan oleh panitia.
+3. **Sistem memverifikasi di tabel `voters`**:
+   - Memastikan NIS terdaftar di tabel `voters`.
+   - Memastikan `unique_code` cocok dengan NIS tersebut.
+   - Memastikan status `has_voted` masih `false`.
+   - Memastikan sesi voting dalam status `OPEN`.
+4. **Langkah 2 (Pilih Pasangan Calon)**: Menampilkan identitas siswa terverifikasi dengan badge hak suara aktif, foto berdampingan Ketua & Wakil, nomor urut, slogan, visi, dan program misi paslon.
 5. **Pilih Paslon → Dialog Konfirmasi**: Dialog verifikasi akhir memastikan siswa yakin sebelum suara dikirimkan.
-6. **Eksekusi dalam 1 Transaksi Database Atomik**:
-   - Menyimpan record baru pada tabel `votes` (terenkripsi dan mencatat hash SHA-256).
-   - Menandai siswa bersangkutan dengan penugasan langsung: `$student->has_voted = true; $student->voted_at = now(); $student->save();`.
+6. **Eksekusi dalam 1 Transaksi Database Atomik & Kerahasiaan Pilihan (Secret Ballot)**:
+   - Menyimpan record suara baru pada tabel `votes` (token `unique_code` **TIDAK** disimpan di tabel votes guna menjamin kerahasiaan pilihan pemilih).
+   - Menandai siswa bersangkutan: `$student->has_voted = true; $student->voted_at = now(); $student->save();`.
    - Meng-increment counter suara kandidat terkait.
-   - Mencatat log audit aktivitas pada tabel `system_logs`.
+   - Mencatat log audit aktivitas pada tabel `system_logs` secara rahasia tanpa membocorkan kandidat pilihan pemilih.
 7. **Layar Sukses & Auto-Reset 4 Detik**: Layar menampilkan tanda terima voting digital lalu melakukan auto-reset otomatis kembali ke halaman awal untuk pemilih berikutnya.
 
 ### Alur Panitia (Control Center / Admin)

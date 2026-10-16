@@ -116,9 +116,9 @@
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-100">
                         LANGKAH 1 DARI 2
                     </span>
-                    <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-2">Verifikasi Identitas Siswa</h2>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-2">Verifikasi Identitas &amp; Token</h2>
                     <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                        Masukkan Nomor Induk Siswa (NIS) atau NIK Anda yang telah terdaftar di Daftar Pemilih Tetap (DPT).
+                        Masukkan Nomor Induk Siswa (NIS) dan Token/Kode Unik 4 karakter yang diberikan panitia untuk masuk ke bilik suara digital.
                     </p>
                 </div>
 
@@ -139,6 +139,28 @@
                             >
                         </div>
                         @error('nis')
+                            <p class="mt-1.5 text-xs text-red-600 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="unique_code" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Token / Kode Unik (4 Karakter)
+                            </label>
+                            <span class="text-[11px] font-medium text-slate-400">Diberikan oleh panitia</span>
+                        </div>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="unique_code"
+                                wire:model="unique_code"
+                                maxlength="4"
+                                placeholder="Contoh: A7B2"
+                                class="ui-input w-full text-base sm:text-lg font-mono font-bold tracking-widest uppercase py-3 px-4 text-slate-900"
+                            >
+                        </div>
+                        @error('unique_code')
                             <p class="mt-1.5 text-xs text-red-600 font-semibold">{{ $message }}</p>
                         @enderror
                     </div>

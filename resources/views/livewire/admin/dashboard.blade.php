@@ -600,6 +600,7 @@
                         <th class="px-4 py-2.5">NIS</th>
                         <th class="px-4 py-2.5">Nama Siswa</th>
                         <th class="px-4 py-2.5">Kelas</th>
+                        <th class="px-4 py-2.5">Token / Kode</th>
                         <th class="px-4 py-2.5">Status Hak Suara</th>
                         <th class="px-4 py-2.5">Waktu Voting</th>
                     </tr>
@@ -611,6 +612,11 @@
                             <td class="px-4 py-2.5 font-semibold text-slate-900">{{ $student->name }}</td>
                             <td class="px-4 py-2.5 text-slate-600 font-medium">
                                 <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px]">{{ $student->class ?? '-' }}</span>
+                            </td>
+                            <td class="px-4 py-2.5">
+                                <span class="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/70 px-2 py-0.5 rounded text-[11px] tracking-wider">
+                                    {{ $student->unique_code ?? '-' }}
+                                </span>
                             </td>
                             <td class="px-4 py-2.5">
                                 @if ($student->has_voted)
@@ -631,7 +637,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-6 text-center text-slate-400 font-medium">
+                            <td colspan="6" class="px-4 py-6 text-center text-slate-400 font-medium">
                                 Tidak ada data pemilih yang sesuai kriteria pencarian.
                             </td>
                         </tr>

@@ -506,29 +506,34 @@ class Dashboard extends Component
             return;
         }
 
-        $existingNis = Student::query()
+        $existing = Student::query()
             ->whereIn('nis', array_column($rows, 'nis'))
-            ->pluck('nis')
-            ->all();
+            ->get(['nis', 'unique_code'])
+            ->keyBy('nis');
 
         $now = now();
-        $payload = array_map(fn (array $row): array => [
-            'nis' => $row['nis'],
-            'name' => $row['name'],
-            'class' => $row['class'],
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], $rows);
+        $payload = array_map(function (array $row) use ($existing, $now): array {
+            $code = $row['unique_code'] ?? ($existing[$row['nis']]->unique_code ?? Student::generateUniqueCode());
+
+            return [
+                'nis' => $row['nis'],
+                'name' => $row['name'],
+                'class' => $row['class'],
+                'unique_code' => strtoupper($code),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }, $rows);
 
         DB::transaction(function () use ($payload): void {
             Student::query()->upsert(
                 $payload,
                 ['nis'],
-                ['name', 'class', 'updated_at'],
+                ['name', 'class', 'unique_code', 'updated_at'],
             );
         });
 
-        $updated = count(array_intersect(array_column($rows, 'nis'), $existingNis));
+        $updated = count(array_intersect(array_column($rows, 'nis'), $existing->keys()->all()));
         $created = count($rows) - $updated;
 
         SystemLog::record(
@@ -545,7 +550,7 @@ class Dashboard extends Component
     }
 
     /**
-     * @return list<array{nis: string, name: string, class: ?string}>|null
+     * @return list<array{nis: string, name: string, class: ?string, unique_code?: ?string}>|null
      */
     private function readStudentCsv(): ?array
     {
@@ -561,9 +566,10 @@ class Dashboard extends Component
         $header = fgetcsv($handle, 0, $delimiter);
         $header = array_map(fn ($value): string => strtolower(trim((string) $value, " \t\r\n\xEF\xBB\xBF")), $header ?: []);
 
-        if ($header !== ['nis', 'name', 'class']) {
+        $hasCode = $header === ['nis', 'name', 'class', 'unique_code'];
+        if ($header !== ['nis', 'name', 'class'] && ! $hasCode) {
             fclose($handle);
-            $this->addError('studentFile', 'Header CSV wajib persis: nis,name,class.');
+            $this->addError('studentFile', 'Header CSV wajib: nis,name,class atau nis,name,class,unique_code.');
 
             return null;
         }
@@ -579,13 +585,17 @@ class Dashboard extends Component
                 continue;
             }
 
-            if (count($data) !== 3) {
-                $errors[] = "Baris {$line}: jumlah kolom harus 3.";
+            $expectedCols = $hasCode ? 4 : 3;
+            if (count($data) !== $expectedCols) {
+                $errors[] = "Baris {$line}: jumlah kolom harus {$expectedCols}.";
 
                 continue;
             }
 
-            [$nis, $name, $class] = array_map(fn ($value): string => trim((string) $value), $data);
+            $nis = trim((string) $data[0]);
+            $name = trim((string) $data[1]);
+            $class = trim((string) $data[2]);
+            $uniqueCode = $hasCode ? strtoupper(trim((string) $data[3])) : null;
 
             if ($nis === '' || strlen($nis) > 30) {
                 $errors[] = "Baris {$line}: NIS wajib diisi dan maksimal 30 karakter.";
@@ -603,8 +613,16 @@ class Dashboard extends Component
                 $errors[] = "Baris {$line}: kelas maksimal 50 karakter.";
             }
 
+            if ($hasCode && $uniqueCode !== null && $uniqueCode !== '' && strlen($uniqueCode) !== 4) {
+                $errors[] = "Baris {$line}: unique_code harus 4 karakter.";
+            }
+
             if (count($errors) === 0 || ! str_contains(end($errors), "Baris {$line}:")) {
-                $rows[] = ['nis' => $nis, 'name' => $name, 'class' => $class !== '' ? $class : null];
+                $row = ['nis' => $nis, 'name' => $name, 'class' => $class !== '' ? $class : null];
+                if ($hasCode && $uniqueCode !== null && $uniqueCode !== '') {
+                    $row['unique_code'] = $uniqueCode;
+                }
+                $rows[] = $row;
             }
         }
 

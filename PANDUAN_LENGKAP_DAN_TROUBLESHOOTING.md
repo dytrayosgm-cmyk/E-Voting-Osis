@@ -234,10 +234,10 @@ Petugas jaga bilik suara mengarahkan siswa pemilih mengikuti langkah berikut:
 ```text
 ┌────────────────────────────────────────────────────────┐
 │                        LANGKAH 1                       │
-│ Siswa memasukkan NIS/NIK pada kotak input di layar     │
+│ Siswa memasukkan NIS dan Token/Kode Unik 4 Karakter    │
 │ Tekan tombol "Verifikasi & Lanjutkan"                  │
 └───────────────────────────┬────────────────────────────┘
-                            │ (NIS Valid & Belum Memilih)
+                            │ (NIS & Token Cocok, Belum Memilih)
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │                        LANGKAH 2                       │
@@ -261,10 +261,10 @@ Petugas jaga bilik suara mengarahkan siswa pemilih mengikuti langkah berikut:
 └────────────────────────────────────────────────────────┘
 ```
 
-1. **Langkah 1 (Input NIS)**: Siswa mengetikkan NIS mereka pada formulir, lalu menekan tombol **Verifikasi & Lanjutkan**.
+1. **Langkah 1 (Input NIS & Token/Kode Unik 4 Karakter)**: Siswa mengetikkan NIS mereka dan Token/Kode Unik 4 karakter yang diberikan panitia pada formulir, lalu menekan tombol **Verifikasi & Lanjutkan**. Sistem memvalidasi bahwa NIS terdaftar di tabel `voters` dan `unique_code` cocok dengan NIS tersebut.
 2. **Langkah 2 (Pilih Paslon)**: Sistem menampilkan kartu nama siswa dengan tanda `IDENTITAS TERVERIFIKASI` dan menampilkan kartu paslon nomor 1, 2, dst. Siswa dapat menekan tulisan **Program Misi** untuk membaca rincian program kerja.
 3. **Pilih Paslon**: Siswa menekan tombol **Pilih Paslon Ini** pada kandidat pilihannya.
-4. **Dialog Konfirmasi**: Muncul jendela kecil verifikasi akhir. Siswa menekan tombol **Ya, Kirim Suara**.
+4. **Dialog Konfirmasi**: Muncul jendela kecil verifikasi akhir. Siswa menekan tombol **Ya, Kirim Suara**. Pilihan suara dicatat secara terpisah tanpa token guna menjamin asas rahasia (*secret ballot*).
 5. **Selesai**: Layar menampilkan centang hijau: *"Suara Anda Berhasil Tercatat!"*. Siswa dipersilakan meninggalkan bilik suara. Layar akan kembali otomatis ke halaman awal dalam **4 detik**.
 
 ---

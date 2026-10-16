@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -18,6 +19,10 @@ class VotingBooth extends Component
 {
     // ---- Fase Verifikasi ----
     public string $nis = '';
+
+    public string $unique_code = '';
+
+    public string $uniqueCode = '';
 
     public bool $verified = false;
 
@@ -46,6 +51,12 @@ class VotingBooth extends Component
         $this->resetBooth();
     }
 
+    public function updatedUniqueCode($value): void
+    {
+        $this->unique_code = strtoupper(trim((string) $value));
+        $this->uniqueCode = $this->unique_code;
+    }
+
     #[Computed]
     public function votingOpen(): bool
     {
@@ -61,9 +72,8 @@ class VotingBooth extends Component
     }
 
     /**
-     * FASE 1: Verifikasi NIS.
-     * Dibatasi rate limit per-IP untuk mencegah percobaan brute-force
-     * menebak NIS siswa lain secara berurutan.
+     * FASE 1: Verifikasi Kombinasi NIS + Token/Kode Unik 4 Karakter.
+     * Dibatasi rate limit per-IP untuk mencegah brute-force.
      */
     public function verifyNis(): void
     {
@@ -78,10 +88,38 @@ class VotingBooth extends Component
             return;
         }
 
+        if ($this->unique_code === '' && $this->uniqueCode !== '') {
+            $this->unique_code = $this->uniqueCode;
+        } elseif ($this->uniqueCode === '' && $this->unique_code !== '') {
+            $this->uniqueCode = $this->unique_code;
+        }
+
+        $this->nis = trim($this->nis);
+        $this->unique_code = strtoupper(trim($this->unique_code));
+        $this->uniqueCode = $this->unique_code;
+
+        // Validasi:
+        // - NIS wajib ada di tabel `voters`.
+        // - `unique_code` wajib cocok dengan NIS tersebut.
         $this->validate([
-            'nis' => ['required', 'string', 'max:30'],
+            'nis' => [
+                'required',
+                'string',
+                'max:30',
+                Rule::exists('voters', 'nis'),
+            ],
+            'unique_code' => [
+                'required',
+                'string',
+                'size:4',
+                Rule::exists('voters', 'unique_code')->where(fn ($query) => $query->where('nis', $this->nis)),
+            ],
         ], [
             'nis.required' => 'NIS/NIK wajib diisi.',
+            'nis.exists' => 'NIS tidak ditemukan di Daftar Pemilih Tetap (tabel voters).',
+            'unique_code.required' => 'Token / Kode Unik wajib diisi.',
+            'unique_code.size' => 'Token / Kode Unik harus terdiri dari 4 karakter.',
+            'unique_code.exists' => 'Kode unik tidak cocok dengan NIS tersebut.',
         ]);
 
         RateLimiter::hit($throttleKey, 60);
@@ -121,6 +159,11 @@ class VotingBooth extends Component
         $this->studentClass = $student->class ?? '';
         $this->verified = true;
         RateLimiter::clear($throttleKey);
+    }
+
+    public function verifyVoter(): void
+    {
+        $this->verifyNis();
     }
 
     public function selectCandidate(int $candidateId): void
@@ -241,7 +284,7 @@ class VotingBooth extends Component
 
                     SystemLog::record(
                         SystemLog::TYPE_VOTE_SUCCESS,
-                        "Suara masuk: {$student->name} (NIS: {$student->nis}) memilih Paslon No. {$candidate->number_order} - {$candidate->chairman_name}/{$candidate->vice_chairman_name}.",
+                        "Suara masuk: pemilih terverifikasi (NIS: {$student->nis}) telah menggunakan hak suara. Pilihan kandidat dirahasiakan (secret ballot).",
                         $student->id,
                     );
                 });
@@ -289,6 +332,8 @@ class VotingBooth extends Component
     public function resetBooth(): void
     {
         $this->nis = '';
+        $this->unique_code = '';
+        $this->uniqueCode = '';
         $this->verified = false;
         $this->studentId = null;
         $this->studentName = '';

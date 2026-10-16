@@ -11,11 +11,40 @@ class Student extends Model
         'nis',
         'name',
         'class',
+        'unique_code',
     ];
 
     protected $attributes = [
         'has_voted' => false,
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Student $student) {
+            if (empty($student->unique_code)) {
+                $student->unique_code = static::generateUniqueCode();
+            } else {
+                $student->unique_code = strtoupper(trim((string) $student->unique_code));
+            }
+        });
+    }
+
+    /**
+     * Hasilkan kode unik 4 karakter acak (huruf kapital dan angka)
+     * yang tidak ambigu (menghindari 0, O, 1, I).
+     */
+    public static function generateUniqueCode(): string
+    {
+        $characters = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        do {
+            $code = '';
+            for ($i = 0; $i < 4; $i++) {
+                $code .= $characters[random_int(0, strlen($characters) - 1)];
+            }
+        } while (static::query()->where('unique_code', $code)->exists());
+
+        return $code;
+    }
 
     /**
      * `has_voted` dan `voted_at` SENGAJA tidak dimasukkan ke $fillable.
