@@ -131,6 +131,21 @@ class ElectionFeaturesTest extends TestCase
         $this->assertStringNotContainsString('Siswa Sudah Pilih', $content);
     }
 
+    public function test_admin_can_export_dpt_with_tokens_csv(): void
+    {
+        $student = Student::create(['nis' => '1001', 'name' => 'Siswa Satu', 'class' => 'XII RPL 1', 'unique_code' => 'ABCD']);
+
+        $response = $this->actingAs($this->admin, 'admin')->get('/admin/reports/export-dpt');
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('DAFTAR PEMILIH TETAP (DPT) & TOKEN BILIK SUARA', $content);
+        $this->assertStringContainsString('Token / Kode Unik', $content);
+        $this->assertStringContainsString('ABCD', $content);
+        $this->assertStringContainsString('Siswa Satu', $content);
+    }
+
     public function test_livewire_dashboard_finalize_and_reopen_election(): void
     {
         $candidate = Candidate::create([

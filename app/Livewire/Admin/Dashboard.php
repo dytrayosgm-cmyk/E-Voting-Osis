@@ -8,7 +8,9 @@ use App\Models\Setting;
 use App\Models\Student;
 use App\Models\SystemLog;
 use App\Models\Vote;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -136,8 +138,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'X %')
                     ->orWhere('class', 'like', 'X-%')
+                    ->orWhere('class', 'like', '%-X')
+                    ->orWhere('class', 'like', '%-X-%')
+                    ->orWhere('class', 'like', '% X')
                     ->orWhere('class', 'like', '10 %')
                     ->orWhere('class', 'like', '10-%')
+                    ->orWhere('class', 'like', '%-10')
+                    ->orWhere('class', 'like', '%-10-%')
+                    ->orWhere('class', 'like', '% 10')
                     ->orWhere('class', '=', 'X')
                     ->orWhere('class', '=', '10');
             });
@@ -145,8 +153,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'XI %')
                     ->orWhere('class', 'like', 'XI-%')
+                    ->orWhere('class', 'like', '%-XI')
+                    ->orWhere('class', 'like', '%-XI-%')
+                    ->orWhere('class', 'like', '% XI')
                     ->orWhere('class', 'like', '11 %')
                     ->orWhere('class', 'like', '11-%')
+                    ->orWhere('class', 'like', '%-11')
+                    ->orWhere('class', 'like', '%-11-%')
+                    ->orWhere('class', 'like', '% 11')
                     ->orWhere('class', '=', 'XI')
                     ->orWhere('class', '=', '11');
             });
@@ -154,8 +168,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'XII %')
                     ->orWhere('class', 'like', 'XII-%')
+                    ->orWhere('class', 'like', '%-XII')
+                    ->orWhere('class', 'like', '%-XII-%')
+                    ->orWhere('class', 'like', '% XII')
                     ->orWhere('class', 'like', '12 %')
                     ->orWhere('class', 'like', '12-%')
+                    ->orWhere('class', 'like', '%-12')
+                    ->orWhere('class', 'like', '%-12-%')
+                    ->orWhere('class', 'like', '% 12')
                     ->orWhere('class', '=', 'XII')
                     ->orWhere('class', '=', '12');
             });
@@ -179,8 +199,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'X %')
                     ->orWhere('class', 'like', 'X-%')
+                    ->orWhere('class', 'like', '%-X')
+                    ->orWhere('class', 'like', '%-X-%')
+                    ->orWhere('class', 'like', '% X')
                     ->orWhere('class', 'like', '10 %')
                     ->orWhere('class', 'like', '10-%')
+                    ->orWhere('class', 'like', '%-10')
+                    ->orWhere('class', 'like', '%-10-%')
+                    ->orWhere('class', 'like', '% 10')
                     ->orWhere('class', '=', 'X')
                     ->orWhere('class', '=', '10');
             });
@@ -188,8 +214,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'XI %')
                     ->orWhere('class', 'like', 'XI-%')
+                    ->orWhere('class', 'like', '%-XI')
+                    ->orWhere('class', 'like', '%-XI-%')
+                    ->orWhere('class', 'like', '% XI')
                     ->orWhere('class', 'like', '11 %')
                     ->orWhere('class', 'like', '11-%')
+                    ->orWhere('class', 'like', '%-11')
+                    ->orWhere('class', 'like', '%-11-%')
+                    ->orWhere('class', 'like', '% 11')
                     ->orWhere('class', '=', 'XI')
                     ->orWhere('class', '=', '11');
             });
@@ -197,8 +229,14 @@ class Dashboard extends Component
             $query->where(function ($q) {
                 $q->where('class', 'like', 'XII %')
                     ->orWhere('class', 'like', 'XII-%')
+                    ->orWhere('class', 'like', '%-XII')
+                    ->orWhere('class', 'like', '%-XII-%')
+                    ->orWhere('class', 'like', '% XII')
                     ->orWhere('class', 'like', '12 %')
                     ->orWhere('class', 'like', '12-%')
+                    ->orWhere('class', 'like', '%-12')
+                    ->orWhere('class', 'like', '%-12-%')
+                    ->orWhere('class', 'like', '% 12')
                     ->orWhere('class', '=', 'XII')
                     ->orWhere('class', '=', '12');
             });
@@ -506,30 +544,54 @@ class Dashboard extends Component
             return;
         }
 
+        // Pastikan kolom unique_code sudah ada di database
+        if (! Schema::hasColumn('students', 'unique_code')) {
+            try {
+                Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $e) {
+                // Jangan crash jika command migrate gagal
+            }
+        }
+
+        $hasUniqueCodeCol = Schema::hasColumn('students', 'unique_code');
+
         $existing = Student::query()
             ->whereIn('nis', array_column($rows, 'nis'))
-            ->get(['nis', 'unique_code'])
+            ->get($hasUniqueCodeCol ? ['nis', 'unique_code'] : ['nis'])
             ->keyBy('nis');
 
         $now = now();
-        $payload = array_map(function (array $row) use ($existing, $now): array {
-            $code = $row['unique_code'] ?? ($existing[$row['nis']]->unique_code ?? Student::generateUniqueCode());
-
-            return [
+        $usedCodes = [];
+        $payload = array_map(function (array $row) use ($existing, $now, $hasUniqueCodeCol, &$usedCodes): array {
+            $data = [
                 'nis' => $row['nis'],
                 'name' => $row['name'],
                 'class' => $row['class'],
-                'unique_code' => strtoupper($code),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
+
+            if ($hasUniqueCodeCol) {
+                $code = $row['unique_code'] ?? ($existing[$row['nis']]->unique_code ?? null);
+                if (! $code) {
+                    do {
+                        $code = Student::generateUniqueCode();
+                    } while (isset($usedCodes[$code]));
+                }
+                $usedCodes[$code] = true;
+                $data['unique_code'] = strtoupper((string) $code);
+            }
+
+            return $data;
         }, $rows);
 
-        DB::transaction(function () use ($payload): void {
+        $updateCols = $hasUniqueCodeCol ? ['name', 'class', 'unique_code', 'updated_at'] : ['name', 'class', 'updated_at'];
+
+        DB::transaction(function () use ($payload, $updateCols): void {
             Student::query()->upsert(
                 $payload,
                 ['nis'],
-                ['name', 'class', 'unique_code', 'updated_at'],
+                $updateCols,
             );
         });
 

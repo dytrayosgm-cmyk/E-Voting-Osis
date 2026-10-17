@@ -33,6 +33,7 @@ Route::prefix('admin')->name('admin.')->middleware('secure.domain')->group(funct
         Route::get('/dashboard', Dashboard::class)->name('dashboard');
         Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
         Route::get('/reports/export-unvoted', [ReportController::class, 'exportUnvotedCsv'])->name('reports.export-unvoted');
+        Route::get('/reports/export-dpt', [ReportController::class, 'exportDptCsv'])->name('reports.export-dpt');
 
         Route::get('/management', [AdminManagementController::class, 'index'])->name('management.index');
         Route::get('/management/create', [AdminManagementController::class, 'create'])->name('management.create');

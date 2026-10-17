@@ -515,6 +515,14 @@
 
             <div class="flex flex-wrap items-center gap-2">
                 <a
+                    href="{{ route('admin.reports.export-dpt') }}"
+                    class="ui-button bg-indigo-50 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-2xs"
+                    title="Unduh seluruh DPT beserta Token/Kode Unik 4 karakter untuk dibagikan ke siswa"
+                >
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    <span>Unduh DPT + Token (CSV)</span>
+                </a>
+                <a
                     href="{{ route('admin.reports.export-unvoted') }}"
                     class="ui-button bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-2xs"
                 >

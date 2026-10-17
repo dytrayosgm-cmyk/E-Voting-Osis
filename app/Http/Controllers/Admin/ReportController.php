@@ -123,7 +123,7 @@ class ReportController extends Controller
             fputcsv($handle, ['Waktu Unduh', now()->format('d F Y, H:i:s').' WIB']);
             fputcsv($handle, []);
 
-            fputcsv($handle, ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Status Kehadiran']);
+            fputcsv($handle, ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Token / Kode Unik', 'Status Kehadiran']);
 
             Student::where('has_voted', false)
                 ->orderBy('class')
@@ -137,6 +137,7 @@ class ReportController extends Controller
                             $student->nis,
                             $student->name,
                             $student->class ?? 'Tanpa Kelas',
+                            $student->unique_code ?? '-',
                             'Belum Memilih',
                         ]);
                     }
@@ -146,6 +147,55 @@ class ReportController extends Controller
         };
 
         SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, 'Admin mengekspor daftar siswa yang belum memilih (CSV).');
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Export seluruh DPT lengkap dengan Token / Kode Unik (untuk distribusi panitia ke siswa).
+     */
+    public function exportDptCsv(): StreamedResponse
+    {
+        $filename = 'dpt-dan-token-pemilih-'.now()->format('Y-m-d_His').'.csv';
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+
+            // BOM UTF-8
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, ['DAFTAR PEMILIH TETAP (DPT) & TOKEN BILIK SUARA']);
+            fputcsv($handle, ['SMK AN-NURMANIYAH - E-VOTING OSIS']);
+            fputcsv($handle, ['Waktu Unduh', now()->format('d F Y, H:i:s').' WIB']);
+            fputcsv($handle, []);
+
+            fputcsv($handle, ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Token / Kode Unik', 'Status Hak Suara', 'Waktu Memilih']);
+
+            Student::query()
+                ->orderBy('class')
+                ->orderBy('name')
+                ->chunk(200, function ($students) use ($handle) {
+                    static $no = 0;
+                    foreach ($students as $student) {
+                        $no++;
+                        fputcsv($handle, [
+                            $no,
+                            $student->nis,
+                            $student->name,
+                            $student->class ?? '-',
+                            $student->unique_code ?? '-',
+                            $student->has_voted ? 'Sudah Memilih' : 'Belum Memilih',
+                            $student->voted_at ? $student->voted_at->format('Y-m-d H:i:s') : '-',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        };
+
+        SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, 'Admin mengekspor daftar DPT beserta token unik pemilih (CSV).');
 
         return response()->streamDownload($callback, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',

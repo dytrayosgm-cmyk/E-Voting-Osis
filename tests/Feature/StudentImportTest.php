@@ -29,6 +29,32 @@ class StudentImportTest extends TestCase
             'name' => 'Andi Pratama',
             'class' => 'XII IPA 1',
         ]);
+
+        $student = Student::query()->where('nis', '2025001')->first();
+        $this->assertNotNull($student->unique_code);
+        $this->assertSame(4, strlen($student->unique_code));
+    }
+
+    public function test_import_generates_unique_codes_for_vocational_format(): void
+    {
+        $csv = "nis,name,class\n"
+            ."1001,Ahmad Rizki,RPL-X\n"
+            ."1002,Siti Nurhaliza,TKJ-XI\n"
+            ."1003,Budi Santoso,AKL-XII\n";
+
+        Livewire::test(Dashboard::class)
+            ->set('studentFile', UploadedFile::fake()->createWithContent('dpt.csv', $csv))
+            ->call('importStudents')
+            ->assertHasNoErrors()
+            ->assertSet('importSummary', ['created' => 3, 'updated' => 0]);
+
+        $students = Student::query()->whereIn('nis', ['1001', '1002', '1003'])->get();
+        $this->assertCount(3, $students);
+        foreach ($students as $s) {
+            $this->assertNotEmpty($s->unique_code);
+            $this->assertSame(4, strlen($s->unique_code));
+            $this->assertMatchesRegularExpression('/^[A-Z0-9]{4}$/', $s->unique_code);
+        }
     }
 
     public function test_invalid_duplicate_rows_are_rejected_atomically(): void

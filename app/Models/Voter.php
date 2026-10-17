@@ -6,3 +6,4 @@ class Voter extends Student
 {
     protected $table = 'voters';
 }
+
