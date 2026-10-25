@@ -64,6 +64,15 @@ class VotingBooth extends Component
     }
 
     #[Computed]
+    public function electionPeriod(): string
+    {
+        $setting = Setting::current();
+        $period = trim((string) ($setting->election_period ?? ''));
+
+        return $period !== '' ? $period : 'Periode 2025/2026';
+    }
+
+    #[Computed]
     public function candidates()
     {
         return Candidate::where('is_active', true)

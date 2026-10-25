@@ -70,7 +70,7 @@
         </div>
 
         <p class="text-center text-xs text-slate-400">
-            © 2026 E-Voting OSIS SMK An-Nurmaniyah
+            © 2026 E-Voting OSIS • Aplikasi Pemilihan Ketua &amp; Wakil OSIS
         </p>
     </div>
 </body>

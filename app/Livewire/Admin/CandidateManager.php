@@ -51,6 +51,14 @@ class CandidateManager extends Component
 
     public bool $is_active = true;
 
+    #[Validate('nullable|string|max:100')]
+    public string $election_period = '';
+
+    public function mount(): void
+    {
+        $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
+    }
+
     #[Computed]
     public function votingOpen(): bool
     {
@@ -69,6 +77,7 @@ class CandidateManager extends Component
         }
 
         $this->resetForm();
+        $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
         $this->showModal = true;
     }
 
@@ -91,6 +100,7 @@ class CandidateManager extends Component
         $this->vice_chairman_photo = null;
         $this->existingChairmanPhoto = $c->chairman_photo;
         $this->existingViceChairmanPhoto = $c->vice_chairman_photo;
+        $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
         $this->showModal = true;
     }
 
@@ -107,6 +117,7 @@ class CandidateManager extends Component
             'slogan' => 'nullable|string|max:150',
             'vision' => 'required|string|max:2000',
             'missionText' => 'required|string|max:3000',
+            'election_period' => 'nullable|string|max:100',
             'chairman_photo' => 'nullable|image|max:2048',
             'vice_chairman_photo' => 'nullable|image|max:2048',
         ];
@@ -149,6 +160,12 @@ class CandidateManager extends Component
         } else {
             $candidate = Candidate::create($data);
             SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menambahkan Paslon baru No. {$data['number_order']}.");
+        }
+
+        if (! empty($validated['election_period'])) {
+            Setting::current()->update([
+                'election_period' => trim($validated['election_period']),
+            ]);
         }
 
         $this->showModal = false;
@@ -209,6 +226,7 @@ class CandidateManager extends Component
             'slogan', 'vision', 'missionText', 'chairman_photo', 'vice_chairman_photo',
             'existingChairmanPhoto', 'existingViceChairmanPhoto',
         ]);
+        $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
         $this->is_active = true;
         $this->resetErrorBag();
     }

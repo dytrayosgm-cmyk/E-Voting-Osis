@@ -121,4 +121,29 @@ class CandidateManagerTest extends TestCase
             ->call('openCreate')
             ->assertSet('showModal', true);
     }
+
+    public function test_admin_can_update_election_period_when_editing_candidate(): void
+    {
+        $candidate = Candidate::create([
+            'number_order' => 1,
+            'chairman_name' => 'Calon Ketua',
+            'vice_chairman_name' => 'Calon Wakil',
+            'vision' => 'Visi',
+            'mission' => ['Misi'],
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin, 'admin');
+
+        Livewire::test(CandidateManager::class)
+            ->call('openEdit', $candidate->id)
+            ->set('election_period', 'Periode 2026/2027')
+            ->call('save')
+            ->assertSet('showModal', false);
+
+        $this->assertSame('Periode 2026/2027', Setting::current()->election_period);
+
+        Livewire::test(\App\Livewire\Voter\VotingBooth::class)
+            ->assertSee('Periode 2026/2027');
+    }
 }

@@ -8,6 +8,7 @@ class Setting extends Model
 {
     protected $fillable = [
         'session_name',
+        'election_period',
         'is_voting_open',
         'opened_at',
         'closed_at',
@@ -24,6 +25,11 @@ class Setting extends Model
             'is_finalized' => 'boolean',
             'finalized_at' => 'datetime',
         ];
+    }
+
+    public function getElectionPeriodAttribute($value): string
+    {
+        return $value ?: 'Periode 2025/2026';
     }
 
     /**

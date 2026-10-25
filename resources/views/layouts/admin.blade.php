@@ -135,7 +135,7 @@
 
     {{-- Footer matching Design --}}
     <footer class="mt-auto py-6 border-t border-slate-200/60 bg-white/50 text-center text-xs text-slate-400">
-        <p>© 2026 E-Voting OSIS SMK An-Nurmaniyah • Panitia Pemilihan Siswa Terpadu.</p>
+        <p>© 2026 E-Voting OSIS • Aplikasi Pemilihan Ketua &amp; Wakil OSIS.</p>
         <p class="mt-1 text-[11px] text-slate-400/80">Dibangun dengan keamanan terenkripsi tinggi, Database Transaction Ledger, dan Audit Trail SHA-256.</p>
     </footer>
 

@@ -3,10 +3,14 @@
     {{-- Section Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <div class="flex items-center gap-2.5">
+            <div class="flex flex-wrap items-center gap-2">
                 <h2 class="text-lg font-extrabold text-slate-900">Manajemen Paslon</h2>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                     {{ $candidates->count() }} Pasangan Kandidat
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100" title="Periode aktif pada bilik suara siswa">
+                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>{{ $this->election_period ?: 'Periode 2025/2026' }}</span>
                 </span>
             </div>
             <p class="mt-0.5 text-xs text-slate-500">Tambah, edit, dan kelola identitas paslon langsung dari Dashboard admin.</p>
@@ -304,6 +308,22 @@
                         <label class="block font-bold text-slate-700 mb-1">Slogan / Tagline</label>
                         <input type="text" wire:model="slogan" class="ui-input w-full" placeholder="Contoh: Bersama Kita Berkarya, Mandiri dan Berprestasi">
                         @error('slogan') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 space-y-1">
+                        <label class="block font-bold text-slate-800">
+                            Periode / Hari Pemilihan (Tampil di Bilik Suara)
+                        </label>
+                        <input
+                            type="text"
+                            wire:model="election_period"
+                            class="ui-input w-full bg-white text-xs font-semibold"
+                            placeholder="Contoh: Periode 2025/2026 atau Hari Pemilihan: 25 Okt 2026"
+                        >
+                        <p class="text-[10px] text-slate-500">
+                            Dapat disesuaikan dengan hari pemilihan. Otomatis tampil di sub-bar bilik suara siswa.
+                        </p>
+                        @error('election_period') <p class="text-red-600 text-[11px]">{{ $message }}</p> @enderror
                     </div>
 
                     <div>

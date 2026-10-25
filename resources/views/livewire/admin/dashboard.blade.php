@@ -29,7 +29,7 @@
                 Dashboard Admin
             </h1>
             <p class="mt-1 text-xs text-slate-400 font-medium">
-                Pemilihan Ketua &amp; Wakil OSIS • SMK An-Nurmaniyah Periode 2025/2026
+                Pemilihan Ketua &amp; Wakil OSIS • SMK An-Nurmaniyah
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
@@ -164,7 +164,7 @@
                                 Paslon No. {{ sprintf('%02d', $this->winner->number_order) }} — {{ $this->winner->chairman_name }} &amp; {{ $this->winner->vice_chairman_name }}
                             </h2>
                             <p class="text-xs sm:text-sm text-slate-600 font-medium italic mt-1">
-                                “{{ $this->winner->slogan ?: 'Terpilih Memimpin OSIS SMK An-Nurmaniyah Periode 2025/2026' }}”
+                                “{{ $this->winner->slogan ?: 'Terpilih Memimpin OSIS SMK An-Nurmaniyah' }}”
                             </p>
                             <p class="text-[11px] text-slate-500 font-semibold mt-2">
                                 Ditetapkan pada: {{ $this->setting->finalized_at?->format('d F Y • H:i:s') ?? now()->format('d F Y • H:i:s') }} WIB
@@ -192,8 +192,8 @@
     @endif
 
 
-    {{-- Top 4 KPI Metric Cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {{-- Top 3 Primary Metric Cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {{-- Card 1: Total Suara Masuk --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
             <div>
@@ -280,32 +280,6 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
                         Belum pernah dibuka
                     @endif
-                </p>
-            </div>
-        </div>
-
-        {{-- Card 4: DB Transaction Health --}}
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">DB TRANSACTION HEALTH</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-                    </div>
-                </div>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-black {{ $this->dbHealth['ok'] ? 'text-emerald-600' : 'text-red-600' }}">
-                        {{ $this->dbHealth['label'] }}
-                    </span>
-                    <span class="text-xs font-semibold text-slate-400">
-                        {{ $this->dbHealth['latency_ms'] ?? 0.1 }} ms
-                    </span>
-                </div>
-            </div>
-            <div class="mt-3">
-                <p class="text-xs text-slate-500 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                    Database Engine Connected • 0 rollbacks
                 </p>
             </div>
         </div>
@@ -557,12 +531,6 @@
                     class="px-3.5 py-1.5 rounded-lg transition cursor-pointer {{ $voterTab === 'voted' ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900' }}"
                 >
                     Sudah Memilih ({{ $this->votedStudentsCount }})
-                </button>
-                <button
-                    wire:click="$set('voterTab', 'all')"
-                    class="px-3.5 py-1.5 rounded-lg transition cursor-pointer {{ $voterTab === 'all' ? 'bg-white text-slate-900 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900' }}"
-                >
-                    Semua ({{ $this->totalStudents }})
                 </button>
             </div>
 
