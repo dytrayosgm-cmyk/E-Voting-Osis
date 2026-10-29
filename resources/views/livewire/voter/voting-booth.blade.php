@@ -325,20 +325,23 @@
                 </div>
 
                 {{-- Step 2 Title & Details --}}
+                @php
+                    $isBoothKandidatMode = \App\Models\Setting::current()->isKandidatMode();
+                @endphp
                 <div class="space-y-1.5">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-100">
                         LANGKAH 2 DARI 2
                     </span>
                     <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                        Pilih Pasangan Calon
+                        {{ $isBoothKandidatMode ? 'Pilih Kandidat OSIS' : 'Pilih Pasangan Calon' }}
                     </h1>
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <p class="text-xs sm:text-sm text-slate-500">
-                            Pilih <strong class="text-slate-800">satu</strong> pasangan calon. <span class="hidden sm:inline">Dapat menekan tombol angka keyboard <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">[1]</kbd> atau <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">[2]</kbd>.</span>
+                            Pilih <strong class="text-slate-800">satu</strong> {{ $isBoothKandidatMode ? 'kandidat' : 'pasangan calon' }}. <span class="hidden sm:inline">Dapat menekan tombol angka keyboard <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">[1]</kbd> atau <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">[2]</kbd>.</span>
                         </p>
                         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200/80 self-start sm:self-auto shrink-0">
                             <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            {{ $this->candidates->count() }} Paslon Terdaftar
+                            {{ $this->candidates->count() }} {{ $isBoothKandidatMode ? 'Kandidat' : 'Paslon' }} Terdaftar
                         </span>
                     </div>
                 </div>
@@ -354,11 +357,9 @@
                     @foreach ($this->candidates as $candidate)
                         <div class="bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
                             <div>
-                                {{-- Photos Section with Badge and Gradient Overlays --}}
-                                <div class="grid grid-cols-2 gap-3 mb-4">
-                                    {{-- Photo 1: Ketua --}}
-                                    <div class="relative rounded-2xl overflow-hidden aspect-[4/5] bg-slate-100 border border-slate-100 group">
-                                        {{-- No. Order Badge --}}
+                                @if ($candidate->isKandidat())
+                                    {{-- Mode Kandidat Individu: Single Card Photo --}}
+                                    <div class="relative rounded-2xl overflow-hidden aspect-[16/10] bg-slate-100 border border-slate-100 group mb-4">
                                         <div class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg text-xs font-black text-slate-800 shadow-xs z-10">
                                             No. {{ $candidate->number_order }}
                                         </div>
@@ -367,58 +368,99 @@
                                             <img
                                                 src="{{ Storage::disk('public')->url($candidate->chairman_photo) }}"
                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                alt="Foto Calon Ketua"
+                                                alt="{{ $candidate->chairman_name }}"
                                             >
                                         @else
                                             <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 text-xs">
-                                                <svg class="w-10 h-10 mb-1 opacity-50" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                                Foto Ketua
+                                                <svg class="w-12 h-12 mb-1 opacity-50" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                                Foto Kandidat
                                             </div>
                                         @endif
 
-                                        {{-- Gradient Bottom Overlay with KETUA label --}}
                                         <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-center pb-2.5 z-10 pointer-events-none">
                                             <span class="text-[11px] font-extrabold tracking-widest text-white uppercase text-center">
-                                                KETUA
+                                                KANDIDAT INDIVIDU
                                             </span>
                                         </div>
                                     </div>
 
-                                    {{-- Photo 2: Wakil --}}
-                                    <div class="relative rounded-2xl overflow-hidden aspect-[4/5] bg-slate-100 border border-slate-100 group">
-                                        @if ($candidate->vice_chairman_photo)
-                                            <img
-                                                src="{{ Storage::disk('public')->url($candidate->vice_chairman_photo) }}"
-                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                alt="Foto Calon Wakil"
-                                            >
-                                        @else
-                                            <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 text-xs">
-                                                <svg class="w-10 h-10 mb-1 opacity-50" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                                Foto Wakil
-                                            </div>
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-lg font-black text-slate-900 leading-tight">
+                                            {{ $candidate->chairman_name }}
+                                        </h3>
+                                        @if ($candidate->slogan)
+                                            <p class="text-xs text-slate-500 italic line-clamp-1">
+                                                “{{ $candidate->slogan }}”
+                                            </p>
                                         @endif
+                                    </div>
+                                @else
+                                    {{-- Photos Section with Badge and Gradient Overlays --}}
+                                    <div class="grid grid-cols-2 gap-3 mb-4">
+                                        {{-- Photo 1: Ketua --}}
+                                        <div class="relative rounded-2xl overflow-hidden aspect-[4/5] bg-slate-100 border border-slate-100 group">
+                                            {{-- No. Order Badge --}}
+                                            <div class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg text-xs font-black text-slate-800 shadow-xs z-10">
+                                                No. {{ $candidate->number_order }}
+                                            </div>
 
-                                        {{-- Gradient Bottom Overlay with WAKIL label --}}
-                                        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-center pb-2.5 z-10 pointer-events-none">
-                                            <span class="text-[11px] font-extrabold tracking-widest text-white uppercase text-center">
-                                                WAKIL
-                                            </span>
+                                            @if ($candidate->chairman_photo)
+                                                <img
+                                                    src="{{ Storage::disk('public')->url($candidate->chairman_photo) }}"
+                                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    alt="Foto Calon Ketua"
+                                                >
+                                            @else
+                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 text-xs">
+                                                    <svg class="w-10 h-10 mb-1 opacity-50" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                                    Foto Ketua
+                                                </div>
+                                            @endif
+
+                                            {{-- Gradient Bottom Overlay with KETUA label --}}
+                                            <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-center pb-2.5 z-10 pointer-events-none">
+                                                <span class="text-[11px] font-extrabold tracking-widest text-white uppercase text-center">
+                                                    KETUA
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {{-- Photo 2: Wakil --}}
+                                        <div class="relative rounded-2xl overflow-hidden aspect-[4/5] bg-slate-100 border border-slate-100 group">
+                                            @if ($candidate->vice_chairman_photo)
+                                                <img
+                                                    src="{{ Storage::disk('public')->url($candidate->vice_chairman_photo) }}"
+                                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    alt="Foto Calon Wakil"
+                                                >
+                                            @else
+                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 text-xs">
+                                                    <svg class="w-10 h-10 mb-1 opacity-50" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                                    Foto Wakil
+                                                </div>
+                                            @endif
+
+                                            {{-- Gradient Bottom Overlay with WAKIL label --}}
+                                            <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-center pb-2.5 z-10 pointer-events-none">
+                                                <span class="text-[11px] font-extrabold tracking-widest text-white uppercase text-center">
+                                                    WAKIL
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {{-- Names & Slogan --}}
-                                <div class="space-y-0.5">
-                                    <h3 class="text-lg font-black text-slate-900 leading-tight">
-                                        {{ $candidate->chairman_name }} <span class="text-slate-400 font-normal">&amp;</span> {{ $candidate->vice_chairman_name }}
-                                    </h3>
-                                    @if ($candidate->slogan)
-                                        <p class="text-xs text-slate-500 italic line-clamp-1">
-                                            “{{ $candidate->slogan }}”
-                                        </p>
-                                    @endif
-                                </div>
+                                    {{-- Names & Slogan --}}
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-lg font-black text-slate-900 leading-tight">
+                                            {{ $candidate->chairman_name }} <span class="text-slate-400 font-normal">&amp;</span> {{ $candidate->vice_chairman_name }}
+                                        </h3>
+                                        @if ($candidate->slogan)
+                                            <p class="text-xs text-slate-500 italic line-clamp-1">
+                                                “{{ $candidate->slogan }}”
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 {{-- Visi Box --}}
                                 <div class="mt-3.5 bg-blue-50/50 border border-blue-100/70 rounded-2xl p-3.5 text-left">
@@ -458,7 +500,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    <span>Pilih Paslon Ini</span>
+                                    <span>Pilih {{ $candidate->isKandidat() ? 'Kandidat' : 'Paslon' }} Ini</span>
                                     <span class="px-2 py-0.5 rounded-md bg-blue-800/60 text-[10px] font-mono font-bold text-blue-100 ml-1">
                                         Tekan [{{ $candidate->number_order }}]
                                     </span>
@@ -493,11 +535,21 @@
                 @if ($chosen)
                     <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center space-y-2">
                         <div class="flex items-center justify-center -space-x-2">
-                            @if ($chosen->chairman_photo)
-                                <img src="{{ Storage::disk('public')->url($chosen->chairman_photo) }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-xs">
-                            @endif
-                            @if ($chosen->vice_chairman_photo)
-                                <img src="{{ Storage::disk('public')->url($chosen->vice_chairman_photo) }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-xs">
+                            @if ($chosen->isKandidat())
+                                @if ($chosen->chairman_photo)
+                                    <img src="{{ Storage::disk('public')->url($chosen->chairman_photo) }}" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow-xs">
+                                @else
+                                    <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 font-black text-xl flex items-center justify-center ring-2 ring-white shadow-xs">
+                                        {{ strtoupper(substr($chosen->chairman_name, 0, 1)) }}
+                                    </div>
+                                @endif
+                            @else
+                                @if ($chosen->chairman_photo)
+                                    <img src="{{ Storage::disk('public')->url($chosen->chairman_photo) }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-xs">
+                                @endif
+                                @if ($chosen->vice_chairman_photo)
+                                    <img src="{{ Storage::disk('public')->url($chosen->vice_chairman_photo) }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-xs">
+                                @endif
                             @endif
                         </div>
                         <div>
@@ -505,7 +557,7 @@
                                 {{ $chosen->number_order }}
                             </span>
                             <p class="font-bold text-slate-900 text-sm mt-1">
-                                {{ $chosen->chairman_name }} &amp; {{ $chosen->vice_chairman_name }}
+                                {{ $chosen->pair_name }}
                             </p>
                             @if ($chosen->slogan)
                                 <p class="text-[11px] text-slate-400 italic">“{{ $chosen->slogan }}”</p>

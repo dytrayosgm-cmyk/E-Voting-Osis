@@ -84,7 +84,17 @@
 
     {{-- Official Winner Celebration Spotlight Card --}}
     @if ($this->setting->is_finalized)
-        @if ($this->winner)
+        @php
+            $ranked = $this->rankedCandidates;
+            $hasVotes = $this->totalVotesIn > 0;
+            $isKandidat = $this->setting->isKandidatMode();
+            $rank1 = $ranked->get(0);
+            $rank2 = $ranked->get(1);
+            $rank3 = $ranked->get(2);
+            $rank4 = $ranked->get(3);
+        @endphp
+
+        @if ($hasVotes && $rank1)
             <div
                 x-data="{
                     burstConfetti() {
@@ -133,56 +143,206 @@
             >
                 <canvas x-ref="confettiCanvas" class="absolute inset-0 pointer-events-none z-10 w-full h-full"></canvas>
 
-                <div class="relative z-20 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div class="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-                        {{-- Candidate Photos with Gold Rings --}}
-                        <div class="flex items-center -space-x-4 shrink-0">
-                            <div class="relative">
-                                @if ($this->winner->chairman_photo)
-                                    <img src="{{ Storage::disk('public')->url($this->winner->chairman_photo) }}" alt="{{ $this->winner->chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
-                                @else
-                                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-amber-200 text-amber-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">K</div>
-                                @endif
-                                <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-500 text-slate-950 shadow-xs">Ketua</span>
+                @if ($isKandidat)
+                    {{-- ================= MODE KANDIDAT INDIVIDU ================= --}}
+                    <div class="relative z-20 space-y-6">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                                {{-- Photos Peringkat 1 & Peringkat 2 side-by-side with Gold Rings & Badges --}}
+                                <div class="flex items-center -space-x-4 shrink-0">
+                                    {{-- Peringkat 1 (Ketua) --}}
+                                    <div class="relative">
+                                        @if ($rank1->chairman_photo)
+                                            <img src="{{ Storage::disk('public')->url($rank1->chairman_photo) }}" alt="{{ $rank1->chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
+                                        @else
+                                            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-amber-200 text-amber-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">
+                                                {{ strtoupper(substr($rank1->chairman_name, 0, 1)) }}
+                                            </div>
+                                        @endif
+                                        <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-500 text-white shadow-xs">KETUA</span>
+                                    </div>
+
+                                    {{-- Peringkat 2 (Wakil) --}}
+                                    @if ($rank2)
+                                        <div class="relative">
+                                            @if ($rank2->chairman_photo)
+                                                <img src="{{ Storage::disk('public')->url($rank2->chairman_photo) }}" alt="{{ $rank2->chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
+                                            @else
+                                                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-200 text-blue-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">
+                                                    {{ strtoupper(substr($rank2->chairman_name, 0, 1)) }}
+                                                </div>
+                                            @endif
+                                            <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-blue-600 text-white shadow-xs">WAKIL</span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
+                                        <span>🏆</span>
+                                        <span>PENGURUS INTI TERPILIH — KETUA &amp; WAKIL OSIS</span>
+                                    </div>
+                                    <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                                        No. {{ sprintf('%02d', $rank1->number_order) }} {{ $rank1->chairman_name }} (Ketua)
+                                        @if ($rank2)
+                                            &amp; No. {{ sprintf('%02d', $rank2->number_order) }} {{ $rank2->chairman_name }} (Wakil)
+                                        @endif
+                                    </h2>
+                                    <p class="text-xs sm:text-sm text-slate-600 font-medium italic mt-1">
+                                        “{{ $rank1->slogan ?: ($rank2?->slogan ?: 'Kandidat Terpilih Memimpin OSIS SMK An-Nurmaniyah') }}”
+                                    </p>
+                                    <p class="text-[11px] text-slate-500 font-semibold mt-2">
+                                        Ditetapkan pada: {{ $this->setting->finalized_at?->format('d F Y • H:i:s') ?? now()->format('d F Y • H:i:s') }} WIB
+                                    </p>
+                                </div>
                             </div>
-                            <div class="relative">
-                                @if ($this->winner->vice_chairman_photo)
-                                    <img src="{{ Storage::disk('public')->url($this->winner->vice_chairman_photo) }}" alt="{{ $this->winner->vice_chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
-                                @else
-                                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-yellow-200 text-yellow-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">W</div>
-                                @endif
-                                <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-yellow-500 text-slate-950 shadow-xs">Wakil</span>
+
+                            {{-- Kotak Statistik Kanan: Rincian Perolehan Suara Keduanya --}}
+                            <div class="shrink-0 bg-white/95 rounded-2xl border border-amber-300 p-4 sm:p-5 text-center min-w-[220px] shadow-sm">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Rincian Suara Terpilih</span>
+                                <div class="mt-2 space-y-2 text-left">
+                                    <div class="p-2 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between gap-3 text-xs">
+                                        <div>
+                                            <span class="font-extrabold text-emerald-900 block text-[11px]">Ketua (No. {{ sprintf('%02d', $rank1->number_order) }})</span>
+                                            <span class="text-[10px] text-emerald-700 font-semibold truncate block max-w-[110px]">{{ $rank1->chairman_name }}</span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="font-black text-emerald-900">{{ number_format($rank1->vote_count) }}</span>
+                                            <span class="text-[10px] text-emerald-600 font-bold block">({{ $rank1->computed_percentage }}%)</span>
+                                        </div>
+                                    </div>
+                                    @if ($rank2)
+                                        <div class="p-2 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between gap-3 text-xs">
+                                            <div>
+                                                <span class="font-extrabold text-blue-900 block text-[11px]">Wakil (No. {{ sprintf('%02d', $rank2->number_order) }})</span>
+                                                <span class="text-[10px] text-blue-700 font-semibold truncate block max-w-[110px]">{{ $rank2->chairman_name }}</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="font-black text-blue-900">{{ number_format($rank2->vote_count) }}</span>
+                                                <span class="text-[10px] text-blue-600 font-bold block">({{ $rank2->computed_percentage }}%)</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
-                        <div>
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
-                                <span>🏆</span>
-                                <span>PASLON RESMI TERPILIH KETUA &amp; WAKIL OSIS</span>
+                        {{-- Tampilan Kandidat 3 dan 4 di bawah mereka --}}
+                        @if ($rank3 || $rank4)
+                            <div class="pt-4 border-t border-amber-300/60">
+                                <div class="flex items-center gap-2 mb-2.5">
+                                    <span class="text-[11px] font-bold text-amber-950 uppercase tracking-wider">Kandidat Peringkat Berikutnya:</span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    @if ($rank3)
+                                        <div class="p-3 bg-white/80 rounded-xl border border-amber-200/70 flex items-center justify-between gap-3 shadow-2xs">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                @if ($rank3->chairman_photo)
+                                                    <img src="{{ Storage::disk('public')->url($rank3->chairman_photo) }}" alt="{{ $rank3->chairman_name }}" class="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0">
+                                                @else
+                                                    <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center shrink-0">
+                                                        {{ strtoupper(substr($rank3->chairman_name, 0, 1)) }}
+                                                    </div>
+                                                @endif
+                                                <div class="min-w-0">
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800">
+                                                        Peringkat 3 • Kandidat Ketiga
+                                                    </span>
+                                                    <p class="font-bold text-slate-900 text-xs truncate mt-0.5">
+                                                        No. {{ sprintf('%02d', $rank3->number_order) }} — {{ $rank3->chairman_name }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right shrink-0">
+                                                <span class="text-xs font-black text-slate-900 block">{{ number_format($rank3->vote_count) }} Suara</span>
+                                                <span class="text-[10px] font-bold text-purple-700 block">({{ $rank3->computed_percentage }}%)</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if ($rank4)
+                                        <div class="p-3 bg-white/80 rounded-xl border border-amber-200/70 flex items-center justify-between gap-3 shadow-2xs">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                @if ($rank4->chairman_photo)
+                                                    <img src="{{ Storage::disk('public')->url($rank4->chairman_photo) }}" alt="{{ $rank4->chairman_name }}" class="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0">
+                                                @else
+                                                    <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center shrink-0">
+                                                        {{ strtoupper(substr($rank4->chairman_name, 0, 1)) }}
+                                                    </div>
+                                                @endif
+                                                <div class="min-w-0">
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-800">
+                                                        Peringkat 4 • Kandidat Keempat
+                                                    </span>
+                                                    <p class="font-bold text-slate-900 text-xs truncate mt-0.5">
+                                                        No. {{ sprintf('%02d', $rank4->number_order) }} — {{ $rank4->chairman_name }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right shrink-0">
+                                                <span class="text-xs font-black text-slate-900 block">{{ number_format($rank4->vote_count) }} Suara</span>
+                                                <span class="text-[10px] font-bold text-slate-600 block">({{ $rank4->computed_percentage }}%)</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
-                            <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 mt-2 tracking-tight">
-                                Paslon No. {{ sprintf('%02d', $this->winner->number_order) }} — {{ $this->winner->chairman_name }} &amp; {{ $this->winner->vice_chairman_name }}
-                            </h2>
-                            <p class="text-xs sm:text-sm text-slate-600 font-medium italic mt-1">
-                                “{{ $this->winner->slogan ?: 'Terpilih Memimpin OSIS SMK An-Nurmaniyah' }}”
-                            </p>
-                            <p class="text-[11px] text-slate-500 font-semibold mt-2">
-                                Ditetapkan pada: {{ $this->setting->finalized_at?->format('d F Y • H:i:s') ?? now()->format('d F Y • H:i:s') }} WIB
-                            </p>
-                        </div>
+                        @endif
                     </div>
 
-                    <div class="shrink-0 bg-white/95 rounded-2xl border border-amber-300 p-4 sm:p-5 text-center min-w-[200px] shadow-sm">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Suara Terpilih</span>
-                        <div class="mt-1 flex items-baseline justify-center gap-1">
-                            <span class="text-3xl sm:text-4xl font-black text-amber-600">{{ number_format($this->winner->vote_count) }}</span>
-                            <span class="text-sm font-bold text-slate-400">Suara</span>
+                @else
+                    {{-- ================= MODE PASLON ================= --}}
+                    <div class="relative z-20 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div class="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                            {{-- Candidate Photos with Gold Rings --}}
+                            <div class="flex items-center -space-x-4 shrink-0">
+                                <div class="relative">
+                                    @if ($this->winner->chairman_photo)
+                                        <img src="{{ Storage::disk('public')->url($this->winner->chairman_photo) }}" alt="{{ $this->winner->chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
+                                    @else
+                                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-amber-200 text-amber-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">K</div>
+                                    @endif
+                                    <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-500 text-slate-950 shadow-xs">Ketua</span>
+                                </div>
+                                <div class="relative">
+                                    @if ($this->winner->vice_chairman_photo)
+                                        <img src="{{ Storage::disk('public')->url($this->winner->vice_chairman_photo) }}" alt="{{ $this->winner->vice_chairman_name }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-amber-400 shadow-md">
+                                    @else
+                                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-yellow-200 text-yellow-900 font-black text-xl flex items-center justify-center ring-4 ring-amber-400 shadow-md">W</div>
+                                    @endif
+                                    <span class="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-yellow-500 text-slate-950 shadow-xs">Wakil</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
+                                    <span>🏆</span>
+                                    <span>PASLON RESMI TERPILIH KETUA &amp; WAKIL OSIS</span>
+                                </div>
+                                <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                                    Paslon No. {{ sprintf('%02d', $this->winner->number_order) }} — {{ $this->winner->chairman_name }} &amp; {{ $this->winner->vice_chairman_name }}
+                                </h2>
+                                <p class="text-xs sm:text-sm text-slate-600 font-medium italic mt-1">
+                                    “{{ $this->winner->slogan ?: 'Terpilih Memimpin OSIS SMK An-Nurmaniyah' }}”
+                                </p>
+                                <p class="text-[11px] text-slate-500 font-semibold mt-2">
+                                    Ditetapkan pada: {{ $this->setting->finalized_at?->format('d F Y • H:i:s') ?? now()->format('d F Y • H:i:s') }} WIB
+                                </p>
+                            </div>
                         </div>
-                        <div class="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
-                            <span>Perolehan {{ $this->winner->computed_percentage }}%</span>
+
+                        <div class="shrink-0 bg-white/95 rounded-2xl border border-amber-300 p-4 sm:p-5 text-center min-w-[200px] shadow-sm">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Suara Terpilih</span>
+                            <div class="mt-1 flex items-baseline justify-center gap-1">
+                                <span class="text-3xl sm:text-4xl font-black text-amber-600">{{ number_format($this->winner->vote_count) }}</span>
+                                <span class="text-sm font-bold text-slate-400">Suara</span>
+                            </div>
+                            <div class="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
+                                <span>Perolehan {{ $this->winner->computed_percentage }}%</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
             </div>
         @else
             <div class="rounded-2xl bg-amber-50 border border-amber-300 p-5 text-center">
@@ -309,6 +469,12 @@
 
                 {{-- Candidates Progress List --}}
                 <div class="mt-4 space-y-4">
+                    @php
+                        $isKandidatMode = $this->setting->isKandidatMode();
+                        $isClosed = ! $this->setting->is_voting_open || $this->setting->is_finalized;
+                        $statusBadgePrefix = $isClosed ? 'Terpilih' : 'Calon';
+                    @endphp
+
                     @forelse ($this->leaderboard as $i => $c)
                         <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-100/80 hover:bg-slate-50 transition">
                             <div class="flex items-center justify-between gap-3">
@@ -316,27 +482,49 @@
                                     <span class="w-6 h-6 rounded-md {{ $i === 0 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-white' }} font-black text-xs flex items-center justify-center shrink-0">
                                         {{ sprintf('%02d', $c->number_order) }}
                                     </span>
-                                    <div class="flex items-center -space-x-1 shrink-0">
+
+                                    @if ($isKandidatMode)
+                                        {{-- 1 Foto Avatar per Baris Kandidat --}}
                                         @if ($c->chairman_photo)
-                                            <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Ketua">
+                                            <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-7 h-7 rounded-md object-cover border border-slate-200 shrink-0" alt="{{ $c->chairman_name }}">
                                         @else
-                                            <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-[9px] font-bold flex items-center justify-center">K</div>
+                                            <div class="w-7 h-7 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                                {{ strtoupper(substr($c->chairman_name, 0, 1)) }}
+                                            </div>
                                         @endif
-                                        @if ($c->vice_chairman_photo)
-                                            <img src="{{ Storage::disk('public')->url($c->vice_chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Wakil">
-                                        @else
-                                            <div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center">W</div>
-                                        @endif
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="font-bold text-slate-900 text-xs sm:text-sm truncate">
-                                            {{ $c->chairman_name }} &amp; {{ $c->vice_chairman_name }}
-                                        </p>
-                                        <p class="text-[10px] text-slate-400 italic truncate">
-                                            “{{ $c->slogan ?: 'Kandidat Paslon' }}”
-                                        </p>
-                                    </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                                                {{ $c->chairman_name }}
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 italic truncate">
+                                                “{{ $c->slogan ?: 'Kandidat Individu' }}”
+                                            </p>
+                                        </div>
+                                    @else
+                                        {{-- Mode Paslon: 2 Avatar (Ketua & Wakil) --}}
+                                        <div class="flex items-center -space-x-1 shrink-0">
+                                            @if ($c->chairman_photo)
+                                                <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Ketua">
+                                            @else
+                                                <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-[9px] font-bold flex items-center justify-center">K</div>
+                                            @endif
+                                            @if ($c->vice_chairman_photo)
+                                                <img src="{{ Storage::disk('public')->url($c->vice_chairman_photo) }}" class="w-6 h-6 rounded-md object-cover border border-slate-200" alt="Wakil">
+                                            @else
+                                                <div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center">W</div>
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                                                {{ $c->chairman_name }} &amp; {{ $c->vice_chairman_name }}
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 italic truncate">
+                                                “{{ $c->slogan ?: 'Kandidat Paslon' }}”
+                                            </p>
+                                        </div>
+                                    @endif
                                 </div>
+
                                 <div class="text-right shrink-0">
                                     <span class="text-xs sm:text-sm font-black text-slate-900">{{ $c->vote_count }} Suara</span>
                                     <span class="block text-[11px] font-bold text-blue-600">{{ $c->computed_percentage }}%</span>
@@ -351,10 +539,40 @@
                                 ></div>
                             </div>
 
-                            <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
-                                <span>Peringkat {{ $i + 1 }} {{ $i === 0 && $c->vote_count > 0 ? '(Memimpin perolehan)' : '' }}</span>
-                                <span>{{ $c->computed_percentage }}%</span>
-                            </div>
+                            {{-- Info Peringkat & Badge Proyeksi Jabatan --}}
+                            @if ($isKandidatMode)
+                                <div class="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px]">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        @if ($i === 0)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <span>Peringkat 1 • {{ $statusBadgePrefix }} Ketua OSIS</span>
+                                            </span>
+                                        @elseif ($i === 1)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                <span>Peringkat 2 • {{ $statusBadgePrefix }} Wakil Ketua OSIS</span>
+                                            </span>
+                                        @elseif ($i === 2)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                <span>Peringkat 3 • Kandidat Ketiga</span>
+                                            </span>
+                                        @elseif ($i === 3)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-slate-200 text-slate-700 border border-slate-300">
+                                                <span>Peringkat 4 • Kandidat Keempat</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                                <span>Peringkat {{ $i + 1 }} • Kandidat</span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <span class="font-bold text-slate-500">{{ $c->computed_percentage }}%</span>
+                                </div>
+                            @else
+                                <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                                    <span>Peringkat {{ $i + 1 }} {{ $i === 0 && $c->vote_count > 0 ? '(Memimpin perolehan)' : '' }}</span>
+                                    <span>{{ $c->computed_percentage }}%</span>
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <p class="text-xs text-slate-400 py-4 text-center">Belum ada kandidat terdaftar.</p>

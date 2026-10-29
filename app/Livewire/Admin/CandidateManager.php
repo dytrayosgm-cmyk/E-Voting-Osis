@@ -8,7 +8,6 @@ use App\Models\SystemLog;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -20,29 +19,23 @@ class CandidateManager extends Component
 
     public ?int $editingId = null;
 
-    #[Validate('required|integer|min:1|max:99')]
+    public string $type = 'paslon'; // paslon | kandidat
+
     public $number_order = '';
 
-    #[Validate('required|string|max:100')]
     public $chairman_name = '';
 
-    #[Validate('required|string|max:100')]
     public $vice_chairman_name = '';
 
-    #[Validate('nullable|string|max:150')]
     public $slogan = '';
 
-    #[Validate('required|string|max:2000')]
     public $vision = '';
 
     /** Textarea 1 baris = 1 poin misi, dipecah jadi array saat disimpan */
-    #[Validate('required|string|max:3000')]
     public $missionText = '';
 
-    #[Validate('nullable|image|max:2048')] // 2MB
     public $chairman_photo;
 
-    #[Validate('nullable|image|max:2048')]
     public $vice_chairman_photo;
 
     public ?string $existingChairmanPhoto = null;
@@ -51,18 +44,62 @@ class CandidateManager extends Component
 
     public bool $is_active = true;
 
-    #[Validate('nullable|string|max:100')]
     public string $election_period = '';
 
     public function mount(): void
     {
-        $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
+        $setting = Setting::current();
+        $this->type = $setting->voting_mode ?: 'paslon';
+        $this->election_period = $setting->election_period ?: 'Periode 2025/2026';
+    }
+
+    #[Computed]
+    public function setting(): Setting
+    {
+        return Setting::current();
     }
 
     #[Computed]
     public function votingOpen(): bool
     {
-        return (bool) Setting::current()->is_voting_open;
+        return (bool) $this->setting->is_voting_open;
+    }
+
+    public function setVotingMode(string $mode): void
+    {
+        if (! in_array($mode, ['paslon', 'kandidat'], true)) {
+            return;
+        }
+
+        Setting::current()->update(['voting_mode' => $mode]);
+        $this->type = $mode;
+
+        $label = $mode === 'kandidat' ? 'Kandidat Individu' : 'Paslon (Ketua & Wakil)';
+        SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin mengubah mode sistem pemilihan menjadi {$label}.");
+        unset($this->setting);
+    }
+
+    protected function rules(): array
+    {
+        $rules = [
+            'number_order' => 'required|integer|min:1|max:99|unique:candidates,number_order,'.($this->editingId ?? 'NULL').',id',
+            'type' => 'required|in:paslon,kandidat',
+            'chairman_name' => 'required|string|max:100',
+            'slogan' => 'nullable|string|max:150',
+            'vision' => 'required|string|max:2000',
+            'missionText' => 'required|string|max:3000',
+            'election_period' => 'nullable|string|max:100',
+            'chairman_photo' => 'nullable|image|max:2048',
+            'vice_chairman_photo' => 'nullable|image|max:2048',
+        ];
+
+        if ($this->type === 'paslon') {
+            $rules['vice_chairman_name'] = 'required|string|max:100';
+        } else {
+            $rules['vice_chairman_name'] = 'nullable|string|max:100';
+        }
+
+        return $rules;
     }
 
     public function candidates()
@@ -77,6 +114,7 @@ class CandidateManager extends Component
         }
 
         $this->resetForm();
+        $this->type = Setting::current()->voting_mode ?: 'paslon';
         $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
         $this->showModal = true;
     }
@@ -89,10 +127,11 @@ class CandidateManager extends Component
 
         $c = Candidate::findOrFail($id);
         $this->editingId = $c->id;
+        $this->type = $c->type ?: 'paslon';
         $this->number_order = $c->number_order;
         $this->chairman_name = $c->chairman_name;
-        $this->vice_chairman_name = $c->vice_chairman_name;
-        $this->slogan = $c->slogan;
+        $this->vice_chairman_name = (string) ($c->vice_chairman_name ?? '');
+        $this->slogan = (string) ($c->slogan ?? '');
         $this->vision = $c->vision;
         $this->missionText = implode("\n", $c->mission ?? []);
         $this->is_active = $c->is_active;
@@ -110,26 +149,15 @@ class CandidateManager extends Component
             return;
         }
 
-        $rules = [
-            'number_order' => 'required|integer|min:1|max:99|unique:candidates,number_order,'.($this->editingId ?? 'NULL').',id',
-            'chairman_name' => 'required|string|max:100',
-            'vice_chairman_name' => 'required|string|max:100',
-            'slogan' => 'nullable|string|max:150',
-            'vision' => 'required|string|max:2000',
-            'missionText' => 'required|string|max:3000',
-            'election_period' => 'nullable|string|max:100',
-            'chairman_photo' => 'nullable|image|max:2048',
-            'vice_chairman_photo' => 'nullable|image|max:2048',
-        ];
-
-        $validated = $this->validate($rules);
+        $validated = $this->validate();
 
         $mission = array_values(array_filter(array_map('trim', explode("\n", $this->missionText))));
 
         $data = [
             'number_order' => $validated['number_order'],
+            'type' => $this->type,
             'chairman_name' => $validated['chairman_name'],
-            'vice_chairman_name' => $validated['vice_chairman_name'],
+            'vice_chairman_name' => $this->type === 'paslon' ? $validated['vice_chairman_name'] : null,
             'slogan' => $validated['slogan'],
             'vision' => $validated['vision'],
             'mission' => $mission,
@@ -139,9 +167,13 @@ class CandidateManager extends Component
         if ($this->chairman_photo) {
             $data['chairman_photo'] = $this->chairman_photo->store('candidates', 'public');
         }
-        if ($this->vice_chairman_photo) {
+        if ($this->vice_chairman_photo && $this->type === 'paslon') {
             $data['vice_chairman_photo'] = $this->vice_chairman_photo->store('candidates', 'public');
+        } elseif ($this->type === 'kandidat') {
+            $data['vice_chairman_photo'] = null;
         }
+
+        $labelType = $this->type === 'kandidat' ? 'Kandidat' : 'Paslon';
 
         if ($this->editingId) {
             $candidate = Candidate::findOrFail($this->editingId);
@@ -152,14 +184,14 @@ class CandidateManager extends Component
             if (isset($data['chairman_photo']) && $oldChairmanPhoto) {
                 Storage::disk('public')->delete($oldChairmanPhoto);
             }
-            if (isset($data['vice_chairman_photo']) && $oldViceChairmanPhoto) {
+            if ($oldViceChairmanPhoto && ($this->type === 'kandidat' || isset($data['vice_chairman_photo']))) {
                 Storage::disk('public')->delete($oldViceChairmanPhoto);
             }
 
-            SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin memperbarui data Paslon No. {$data['number_order']}.");
+            SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin memperbarui data {$labelType} No. {$data['number_order']}.");
         } else {
             $candidate = Candidate::create($data);
-            SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menambahkan Paslon baru No. {$data['number_order']}.");
+            SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menambahkan {$labelType} baru No. {$data['number_order']}.");
         }
 
         if (! empty($validated['election_period'])) {
@@ -179,11 +211,12 @@ class CandidateManager extends Component
         }
 
         $c = Candidate::findOrFail($id);
+        $labelType = $c->isKandidat() ? 'Kandidat' : 'Paslon';
 
         // Jangan izinkan hapus kandidat yang sudah punya suara masuk —
         // lindungi integritas data hasil pemilihan.
         if ($c->vote_count > 0) {
-            $this->addError('delete', 'Kandidat ini sudah memiliki suara masuk dan tidak dapat dihapus. Nonaktifkan saja.');
+            $this->addError('delete', "{$labelType} ini sudah memiliki suara masuk dan tidak dapat dihapus. Nonaktifkan saja.");
 
             return;
         }
@@ -193,7 +226,7 @@ class CandidateManager extends Component
         if ($photosToDelete !== []) {
             Storage::disk('public')->delete($photosToDelete);
         }
-        SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menghapus Paslon No. {$c->number_order}.");
+        SystemLog::record(SystemLog::TYPE_ADMIN_ACTION, "Admin menghapus {$labelType} No. {$c->number_order}.");
     }
 
     public bool $showVisionModal = false;
@@ -226,6 +259,7 @@ class CandidateManager extends Component
             'slogan', 'vision', 'missionText', 'chairman_photo', 'vice_chairman_photo',
             'existingChairmanPhoto', 'existingViceChairmanPhoto',
         ]);
+        $this->type = Setting::current()->voting_mode ?: 'paslon';
         $this->election_period = Setting::current()->election_period ?: 'Periode 2025/2026';
         $this->is_active = true;
         $this->resetErrorBag();
@@ -234,7 +268,7 @@ class CandidateManager extends Component
     private function ensureVotingClosed(): bool
     {
         if (Setting::current()->is_voting_open && ! $this->overrideLock) {
-            $this->addError('session', 'Data paslon hanya dapat dikelola saat sesi voting ditutup atau dengan Buka Kunci Sementara.');
+            $this->addError('session', 'Data paslon/kandidat hanya dapat dikelola saat sesi voting ditutup atau dengan Buka Kunci Sementara.');
             $this->showModal = false;
 
             return false;

@@ -9,6 +9,7 @@ class Candidate extends Model
 {
     protected $fillable = [
         'number_order',
+        'type',
         'chairman_name',
         'vice_chairman_name',
         'chairman_photo',
@@ -20,6 +21,7 @@ class Candidate extends Model
     ];
 
     protected $attributes = [
+        'type' => 'paslon',
         'vote_count' => 0,
         'is_active' => true,
     ];
@@ -42,11 +44,25 @@ class Candidate extends Model
     }
 
     /**
-     * Nama gabungan paslon, mis. "Ahmad Fauzi & Siti Nadia"
+     * Nama tampilan kandidat (nama gabungan paslon atau nama tunggal kandidat individu).
      */
     public function getPairNameAttribute(): string
     {
+        if ($this->isKandidat() || empty($this->vice_chairman_name)) {
+            return (string) $this->chairman_name;
+        }
+
         return "{$this->chairman_name} & {$this->vice_chairman_name}";
+    }
+
+    public function isKandidat(): bool
+    {
+        return ($this->type ?? 'paslon') === 'kandidat';
+    }
+
+    public function isPaslon(): bool
+    {
+        return ! $this->isKandidat();
     }
 
     /**

@@ -4,25 +4,50 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg font-extrabold text-slate-900">Manajemen Paslon</h2>
+                <h2 class="text-lg font-extrabold text-slate-900">
+                    Manajemen {{ $this->setting->isKandidatMode() ? 'Kandidat Individu' : 'Paslon' }}
+                </h2>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                    {{ $candidates->count() }} Pasangan Kandidat
+                    {{ $candidates->count() }} {{ $this->setting->isKandidatMode() ? 'Kandidat' : 'Pasangan Kandidat' }}
                 </span>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100" title="Periode aktif pada bilik suara siswa">
                     <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     <span>{{ $this->election_period ?: 'Periode 2025/2026' }}</span>
                 </span>
             </div>
-            <p class="mt-0.5 text-xs text-slate-500">Tambah, edit, dan kelola identitas paslon langsung dari Dashboard admin.</p>
+            <p class="mt-0.5 text-xs text-slate-500">
+                Kelola data pemilihan, sistem kandidat individu vs paslon, dan visi misi langsung dari Dashboard admin.
+            </p>
         </div>
-        <button
-            wire:click="openCreate"
-            @disabled($this->votingOpen && !$overrideLock)
-            class="ui-button bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            Tambah Paslon
-        </button>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Mode Pemilihan Switcher --}}
+            <div class="inline-flex p-1 bg-slate-100/90 rounded-xl border border-slate-200 shadow-2xs">
+                <button
+                    type="button"
+                    wire:click="setVotingMode('paslon')"
+                    class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $this->setting->isPaslonMode() ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}"
+                >
+                    Mode Paslon
+                </button>
+                <button
+                    type="button"
+                    wire:click="setVotingMode('kandidat')"
+                    class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $this->setting->isKandidatMode() ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}"
+                >
+                    Mode Kandidat Individu
+                </button>
+            </div>
+
+            <button
+                wire:click="openCreate"
+                @disabled($this->votingOpen && !$overrideLock)
+                class="ui-button bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Tambah {{ $this->setting->isKandidatMode() ? 'Kandidat' : 'Paslon' }}
+            </button>
+        </div>
     </div>
 
     {{-- Integrity Protection Alert --}}
@@ -75,7 +100,7 @@
                 <thead class="bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                     <tr>
                         <th class="px-4 py-3.5 font-bold">NO.</th>
-                        <th class="px-4 py-3.5 font-bold">PASLON</th>
+                        <th class="px-4 py-3.5 font-bold">PASLON / KANDIDAT</th>
                         <th class="px-4 py-3.5 font-bold">SLOGAN / VISI SINGKAT</th>
                         <th class="px-4 py-3.5 font-bold text-center">SUARA MASUK</th>
                         <th class="px-4 py-3.5 font-bold text-center">STATUS</th>
@@ -95,27 +120,48 @@
                                 </span>
                             </td>
 
-                            {{-- Paslon Identity with 2 mini photos --}}
+                            {{-- Identity Display --}}
                             <td class="px-4 py-3.5 whitespace-nowrap">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center -space-x-1.5 shrink-0">
+                                @if ($c->isKandidat())
+                                    {{-- Single Candidate --}}
+                                    <div class="flex items-center gap-3">
                                         @if ($c->chairman_photo)
-                                            <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-white border border-slate-200" alt="Ketua">
+                                            <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-white border border-slate-200" alt="{{ $c->chairman_name }}">
                                         @else
-                                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px] ring-2 ring-white">K</div>
+                                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs ring-2 ring-white">
+                                                {{ strtoupper(substr($c->chairman_name, 0, 1)) }}
+                                            </div>
                                         @endif
+                                        <div>
+                                            <div class="flex items-center gap-1.5">
+                                                <p class="font-bold text-slate-900 text-xs sm:text-sm">{{ $c->chairman_name }}</p>
+                                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">Individu</span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400 font-medium">Calon Ketua / Wakil OSIS</p>
+                                        </div>
+                                    </div>
+                                @else
+                                    {{-- Paslon Identity with 2 mini photos --}}
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex items-center -space-x-1.5 shrink-0">
+                                            @if ($c->chairman_photo)
+                                                <img src="{{ Storage::disk('public')->url($c->chairman_photo) }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-white border border-slate-200" alt="Ketua">
+                                            @else
+                                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px] ring-2 ring-white">K</div>
+                                            @endif
 
-                                        @if ($c->vice_chairman_photo)
-                                            <img src="{{ Storage::disk('public')->url($c->vice_chairman_photo) }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-white border border-slate-200" alt="Wakil">
-                                        @else
-                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-[10px] ring-2 ring-white">W</div>
-                                        @endif
+                                            @if ($c->vice_chairman_photo)
+                                                <img src="{{ Storage::disk('public')->url($c->vice_chairman_photo) }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-white border border-slate-200" alt="Wakil">
+                                            @else
+                                                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-[10px] ring-2 ring-white">W</div>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-slate-900 text-xs sm:text-sm">{{ $c->chairman_name }} &amp; {{ $c->vice_chairman_name }}</p>
+                                            <p class="text-[10px] text-slate-400 font-medium">Paslon Ketua &amp; Wakil OSIS</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="font-bold text-slate-900 text-xs sm:text-sm">{{ $c->chairman_name }} &amp; {{ $c->vice_chairman_name }}</p>
-                                        <p class="text-[10px] text-slate-400 font-medium">Kandidat Ketua &amp; Wakil OSIS</p>
-                                    </div>
-                                </div>
+                                @endif
                             </td>
 
                             {{-- Slogan / Visi --}}
@@ -165,7 +211,7 @@
                                 </button>
                                 <button
                                     wire:click="delete({{ $c->id }})"
-                                    wire:confirm="Yakin ingin menghapus paslon ini?"
+                                    wire:confirm="Yakin ingin menghapus data ini?"
                                     @disabled($this->votingOpen && !$overrideLock)
                                     type="button"
                                     class="text-red-600 hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -177,7 +223,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-slate-400">
-                                Belum ada kandidat paslon terdaftar. Klik "+ Tambah Paslon" untuk menambahkan.
+                                Belum ada kandidat terdaftar. Klik "+ Tambah {{ $this->setting->isKandidatMode() ? 'Kandidat' : 'Paslon' }}" untuk menambahkan.
                             </td>
                         </tr>
                     @endforelse
@@ -197,7 +243,7 @@
                             {{ sprintf('%02d', $viewingCandidate->number_order) }}
                         </span>
                         <h3 class="text-base font-bold text-slate-900">
-                            {{ $viewingCandidate->chairman_name }} &amp; {{ $viewingCandidate->vice_chairman_name }}
+                            {{ $viewingCandidate->pair_name }}
                         </h3>
                     </div>
                     <button wire:click="closeVisionMission" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
@@ -245,11 +291,36 @@
             <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" wire:click="$set('showModal', false)"></div>
             <div class="relative bg-white rounded-3xl shadow-xl max-w-lg w-full p-6 sm:p-7 my-auto z-10 max-h-[90vh] overflow-y-auto space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <h3 class="text-lg font-bold text-slate-900">
-                        {{ $editingId ? 'Edit Pasangan Calon' : 'Tambah Paslon Baru' }}
-                    </h3>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">
+                            @if ($editingId)
+                                {{ $type === 'kandidat' ? 'Edit Data Kandidat' : 'Edit Pasangan Calon' }}
+                            @else
+                                {{ $type === 'kandidat' ? 'Tambah Kandidat Baru' : 'Tambah Paslon Baru' }}
+                            @endif
+                        </h3>
+                        <p class="text-[11px] text-slate-400">Pilih format pemilihan dan lengkapi data kandidat.</p>
+                    </div>
                     <button wire:click="$set('showModal', false)" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                {{-- Segmented Control / Radio Tab: Paslon vs Kandidat Individu --}}
+                <div class="p-1 bg-slate-100 rounded-xl flex gap-1 border border-slate-200/80">
+                    <button
+                        type="button"
+                        wire:click="$set('type', 'paslon')"
+                        class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center {{ $type === 'paslon' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}"
+                    >
+                        Mode Paslon (Ketua &amp; Wakil)
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('type', 'kandidat')"
+                        class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center {{ $type === 'kandidat' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}"
+                    >
+                        Mode Kandidat Individu
                     </button>
                 </div>
 
@@ -268,41 +339,64 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Nama Calon Ketua</label>
-                            <input type="text" wire:model="chairman_name" class="ui-input w-full" placeholder="Nama Lengkap Ketua">
-                            @error('chairman_name') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                    {{-- Conditional Inputs: Paslon (2 columns) vs Kandidat Individu (full width col-span-2) --}}
+                    @if ($type === 'paslon')
+                        <div class="grid grid-cols-2 gap-3 transition-all duration-200">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Nama Calon Ketua</label>
+                                <input type="text" wire:model="chairman_name" class="ui-input w-full" placeholder="Nama Lengkap Ketua">
+                                @error('chairman_name') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Nama Calon Wakil</label>
+                                <input type="text" wire:model="vice_chairman_name" class="ui-input w-full" placeholder="Nama Lengkap Wakil">
+                                @error('vice_chairman_name') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                            </div>
                         </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Nama Calon Wakil</label>
-                            <input type="text" wire:model="vice_chairman_name" class="ui-input w-full" placeholder="Nama Lengkap Wakil">
-                            @error('vice_chairman_name') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Foto Ketua</label>
-                            <input type="file" wire:model="chairman_photo" accept="image/*" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            @error('chairman_photo') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
-                            @if ($chairman_photo)
-                                <img src="{{ $chairman_photo->temporaryUrl() }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
-                            @elseif ($existingChairmanPhoto)
-                                <img src="{{ Storage::disk('public')->url($existingChairmanPhoto) }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
-                            @endif
+                        <div class="grid grid-cols-2 gap-3 transition-all duration-200">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Foto Ketua</label>
+                                <input type="file" wire:model="chairman_photo" accept="image/*" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                @error('chairman_photo') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                                @if ($chairman_photo)
+                                    <img src="{{ $chairman_photo->temporaryUrl() }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @elseif ($existingChairmanPhoto)
+                                    <img src="{{ Storage::disk('public')->url($existingChairmanPhoto) }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @endif
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Foto Wakil</label>
+                                <input type="file" wire:model="vice_chairman_photo" accept="image/*" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                @error('vice_chairman_photo') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                                @if ($vice_chairman_photo)
+                                    <img src="{{ $vice_chairman_photo->temporaryUrl() }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @elseif ($existingViceChairmanPhoto)
+                                    <img src="{{ Storage::disk('public')->url($existingViceChairmanPhoto) }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @endif
+                            </div>
                         </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Foto Wakil</label>
-                            <input type="file" wire:model="vice_chairman_photo" accept="image/*" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            @error('vice_chairman_photo') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
-                            @if ($vice_chairman_photo)
-                                <img src="{{ $vice_chairman_photo->temporaryUrl() }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
-                            @elseif ($existingViceChairmanPhoto)
-                                <img src="{{ Storage::disk('public')->url($existingViceChairmanPhoto) }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
-                            @endif
+                    @else
+                        {{-- Mode Kandidat Individu: Full Width --}}
+                        <div class="transition-all duration-200 space-y-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Kandidat</label>
+                                <input type="text" wire:model="chairman_name" class="ui-input w-full" placeholder="Nama Lengkap Kandidat (Calon Ketua / Wakil OSIS)">
+                                @error('chairman_name') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">Foto Kandidat</label>
+                                <input type="file" wire:model="chairman_photo" accept="image/*" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                @error('chairman_photo') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
+                                @if ($chairman_photo)
+                                    <img src="{{ $chairman_photo->temporaryUrl() }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @elseif ($existingChairmanPhoto)
+                                    <img src="{{ Storage::disk('public')->url($existingChairmanPhoto) }}" class="mt-2 w-16 h-16 object-cover rounded-xl border border-slate-200">
+                                @endif
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">Slogan / Tagline</label>
@@ -328,7 +422,7 @@
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">Visi</label>
-                        <textarea wire:model="vision" rows="3" class="ui-input w-full" placeholder="Tuliskan rumusan visi paslon..."></textarea>
+                        <textarea wire:model="vision" rows="3" class="ui-input w-full" placeholder="Tuliskan rumusan visi kandidat..."></textarea>
                         @error('vision') <p class="mt-1 text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -343,7 +437,7 @@
                             Batal
                         </button>
                         <button type="submit" wire:loading.attr="disabled" class="ui-button bg-blue-600 text-white hover:bg-blue-700 text-xs px-5 py-2">
-                            <span wire:loading.remove wire:target="save">Simpan Paslon</span>
+                            <span wire:loading.remove wire:target="save">Simpan {{ $type === 'kandidat' ? 'Kandidat' : 'Paslon' }}</span>
                             <span wire:loading wire:target="save">Menyimpan...</span>
                         </button>
                     </div>

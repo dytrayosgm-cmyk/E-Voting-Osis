@@ -32,10 +32,13 @@ class ReportController extends Controller
             $totalUnvoted = Student::where('has_voted', false)->count();
             $participationRate = $totalDpt > 0 ? round(($totalVotes / $totalDpt) * 100, 2) : 0.0;
 
+            $isKandidat = $setting->isKandidatMode();
+
             // 1. Header Berita Acara
-            fputcsv($handle, ['BERITA ACARA REKAPITULASI HASIL PEMILIHAN KETUA & WAKIL OSIS']);
-            fputcsv($handle, ['SMK AN-NURMANIYAH - PERIODE 2025/2026']);
+            fputcsv($handle, [$isKandidat ? 'BERITA ACARA REKAPITULASI HASIL PEMILIHAN KANDIDAT INDIVIDU OSIS' : 'BERITA ACARA REKAPITULASI HASIL PEMILIHAN KETUA & WAKIL OSIS']);
+            fputcsv($handle, ['SMK AN-NURMANIYAH - '.($setting->election_period ?: 'PERIODE 2025/2026')]);
             fputcsv($handle, ['Waktu Dokumen Dibuat', now()->format('d F Y, H:i:s').' WIB']);
+            fputcsv($handle, ['Mode Sistem Pemilihan', $isKandidat ? 'Kandidat Individu (Peringkat 1 = Ketua, Peringkat 2 = Wakil)' : 'Sistem Paslon (Ketua & Wakil)']);
             fputcsv($handle, ['Status Sesi', $setting->is_finalized ? 'FINAL (Pemenang Ditetapkan)' : ($setting->is_voting_open ? 'SEDANG BERJALAN (OPEN)' : 'DITUTUP (CLOSED)')]);
             fputcsv($handle, []);
 
@@ -48,21 +51,51 @@ class ReportController extends Controller
             fputcsv($handle, []);
 
             // 3. Rekapitulasi Perolehan Suara Calon
-            fputcsv($handle, ['--- REKAPITULASI HASIL PEROLEHAN SUARA PASLON ---']);
-            fputcsv($handle, ['No. Urut', 'Pasangan Calon (Ketua & Wakil)', 'Slogan', 'Perolehan Suara Sah', 'Persentase', 'Status']);
+            fputcsv($handle, [$isKandidat ? '--- REKAPITULASI HASIL PEROLEHAN SUARA KANDIDAT INDIVIDU ---' : '--- REKAPITULASI HASIL PEROLEHAN SUARA PASLON ---']);
+            fputcsv($handle, [
+                'No. Urut',
+                $isKandidat ? 'Nama Lengkap Kandidat' : 'Pasangan Calon (Ketua & Wakil)',
+                'Slogan',
+                'Perolehan Suara Sah',
+                'Persentase',
+                'Status / Jabatan',
+            ]);
 
             $candidates = Candidate::orderBy('number_order')->get();
+            $rankedCandidates = Candidate::orderByDesc('vote_count')->orderBy('number_order')->get();
+            $rankMap = [];
+            foreach ($rankedCandidates as $index => $rc) {
+                $rankMap[$rc->id] = $index + 1;
+            }
             $maxVotes = $candidates->max('vote_count') ?? 0;
 
             foreach ($candidates as $c) {
                 // Verifikasi hitungan langsung dari relasi tabel votes
                 $actualVotes = Vote::where('candidate_id', $c->id)->count();
                 $pct = $totalVotes > 0 ? round(($actualVotes / $totalVotes) * 100, 2) : 0.0;
-                $status = ($actualVotes === $maxVotes && $maxVotes > 0 && $setting->is_finalized) ? 'TERPILIH (PEMENANG)' : ($actualVotes === $maxVotes && $maxVotes > 0 ? 'MEMIMPIN' : '-');
+                $rank = $rankMap[$c->id] ?? 999;
+
+                if ($isKandidat) {
+                    if ($rank === 1 && $actualVotes > 0) {
+                        $status = $setting->is_finalized ? 'TERPILIH (KETUA OSIS)' : 'MEMIMPIN (CALON KETUA OSIS)';
+                    } elseif ($rank === 2 && $actualVotes > 0) {
+                        $status = $setting->is_finalized ? 'TERPILIH (WAKIL KETUA OSIS)' : 'CALON WAKIL KETUA OSIS';
+                    } elseif ($rank === 3) {
+                        $status = 'Kandidat 3';
+                    } elseif ($rank === 4) {
+                        $status = 'Kandidat 4';
+                    } else {
+                        $status = '-';
+                    }
+                    $candidateDisplayName = $c->chairman_name;
+                } else {
+                    $status = ($actualVotes === $maxVotes && $maxVotes > 0 && $setting->is_finalized) ? 'TERPILIH (PEMENANG)' : ($actualVotes === $maxVotes && $maxVotes > 0 ? 'MEMIMPIN' : '-');
+                    $candidateDisplayName = "{$c->chairman_name} & {$c->vice_chairman_name}";
+                }
 
                 fputcsv($handle, [
-                    sprintf("No. %02d", $c->number_order),
-                    "{$c->chairman_name} & {$c->vice_chairman_name}",
+                    sprintf('No. %02d', $c->number_order),
+                    $candidateDisplayName,
                     $c->slogan ?: '-',
                     $actualVotes,
                     $pct.'%',
@@ -73,21 +106,37 @@ class ReportController extends Controller
 
             // 4. Rincian Audit Seluruh Suara Masuk Riil
             fputcsv($handle, ['--- RINCIAN AUDIT LOG TRANSAKSI SUARA MASUK (HASIL RIIL DARI BILIK SUARA) ---']);
-            fputcsv($handle, ['No', 'NIS', 'Nama Siswa', 'Kelas', 'No. Urut Paslon Dipilih', 'Paslon Terpilih', 'Waktu Memilih', 'IP Address Bilik']);
+            fputcsv($handle, [
+                'No',
+                'NIS',
+                'Nama Siswa',
+                'Kelas',
+                $isKandidat ? 'No. Urut Kandidat Dipilih' : 'No. Urut Paslon Dipilih',
+                $isKandidat ? 'Kandidat Terpilih' : 'Paslon Terpilih',
+                'Waktu Memilih',
+                'IP Address Bilik',
+            ]);
 
             Vote::with(['student', 'candidate'])
                 ->orderBy('voted_at')
-                ->chunk(200, function ($votes) use ($handle) {
+                ->chunk(200, function ($votes) use ($handle, $isKandidat) {
                     static $no = 0;
                     foreach ($votes as $vote) {
                         $no++;
+                        $votedCandidateName = '-';
+                        if ($vote->candidate) {
+                            $votedCandidateName = $isKandidat
+                                ? $vote->candidate->chairman_name
+                                : "{$vote->candidate->chairman_name} & {$vote->candidate->vice_chairman_name}";
+                        }
+
                         fputcsv($handle, [
                             $no,
                             $vote->student->nis ?? '-',
                             $vote->student->name ?? '-',
                             $vote->student->class ?? '-',
-                            $vote->candidate ? sprintf("No. %02d", $vote->candidate->number_order) : '-',
-                            $vote->candidate ? "{$vote->candidate->chairman_name} & {$vote->candidate->vice_chairman_name}" : '-',
+                            $vote->candidate ? sprintf('No. %02d', $vote->candidate->number_order) : '-',
+                            $votedCandidateName,
                             optional($vote->voted_at)->format('Y-m-d H:i:s'),
                             $vote->ip_address,
                         ]);

@@ -146,4 +146,51 @@ class CandidateManagerTest extends TestCase
         Livewire::test(\App\Livewire\Voter\VotingBooth::class)
             ->assertSee('Periode 2026/2027');
     }
+
+    public function test_admin_can_switch_voting_mode(): void
+    {
+        $this->actingAs($this->admin, 'admin');
+
+        Livewire::test(CandidateManager::class)
+            ->call('setVotingMode', 'kandidat');
+
+        $this->assertSame('kandidat', Setting::current()->voting_mode);
+        $this->assertTrue(Setting::current()->isKandidatMode());
+
+        Livewire::test(CandidateManager::class)
+            ->call('setVotingMode', 'paslon');
+
+        $this->assertSame('paslon', Setting::current()->voting_mode);
+        $this->assertTrue(Setting::current()->isPaslonMode());
+    }
+
+    public function test_admin_can_create_individual_candidate_without_vice_chairman(): void
+    {
+        $this->actingAs($this->admin, 'admin');
+
+        Livewire::test(CandidateManager::class)
+            ->call('openCreate')
+            ->set('type', 'kandidat')
+            ->set('number_order', 1)
+            ->set('chairman_name', 'Fikri Haikal')
+            ->set('vice_chairman_name', '') // kosong pada mode kandidat
+            ->set('slogan', 'Mandiri Berprestasi')
+            ->set('vision', 'Visi Kandidat Tunggal')
+            ->set('missionText', "Misi 1\nMisi 2")
+            ->set('is_active', true)
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('showModal', false);
+
+        $this->assertDatabaseHas('candidates', [
+            'number_order' => 1,
+            'type' => 'kandidat',
+            'chairman_name' => 'Fikri Haikal',
+            'vice_chairman_name' => null,
+        ]);
+
+        $candidate = Candidate::first();
+        $this->assertSame('Fikri Haikal', $candidate->pair_name);
+        $this->assertTrue($candidate->isKandidat());
+    }
 }

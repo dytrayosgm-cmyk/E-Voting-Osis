@@ -90,12 +90,19 @@ class Dashboard extends Component
         $total = $this->totalVotesIn;
 
         return Candidate::orderByDesc('vote_count')
+            ->orderBy('number_order')
             ->get()
             ->map(function (Candidate $c) use ($total) {
                 $c->computed_percentage = $c->percentage($total);
 
                 return $c;
             });
+    }
+
+    #[Computed]
+    public function rankedCandidates()
+    {
+        return $this->leaderboard;
     }
 
     public string $logFilter = 'all'; // all | session | votes | warnings
@@ -405,17 +412,48 @@ class Dashboard extends Component
             'finalized_at' => now(),
         ]);
 
-        $winnerTitle = $this->winner ? "Paslon No. {$this->winner->number_order} ({$this->winner->chairman_name} & {$this->winner->vice_chairman_name})" : 'Belum ada suara';
+        if ($setting->isKandidatMode()) {
+            $ranked = $this->rankedCandidates;
+            $p1 = $ranked->get(0);
+            $p2 = $ranked->get(1);
+            $p3 = $ranked->get(2);
+            $p4 = $ranked->get(3);
 
-        SystemLog::record(
-            SystemLog::TYPE_SESSION_CLOSED,
-            "Sesi pemilihan OSIS RESMI DIAKHIRI oleh admin. Paslon Pemenang: {$winnerTitle}.",
-        );
+            $details = [];
+            if ($p1) {
+                $details[] = "Ketua: No. {$p1->number_order} ({$p1->chairman_name})";
+            }
+            if ($p2) {
+                $details[] = "Wakil: No. {$p2->number_order} ({$p2->chairman_name})";
+            }
+            if ($p3) {
+                $details[] = "Kandidat 3: No. {$p3->number_order} ({$p3->chairman_name})";
+            }
+            if ($p4) {
+                $details[] = "Kandidat 4: No. {$p4->number_order} ({$p4->chairman_name})";
+            }
+
+            $winnerDesc = ! empty($details) ? implode(', ', $details) : 'Belum ada suara';
+
+            SystemLog::record(
+                SystemLog::TYPE_SESSION_CLOSED,
+                "Sesi pemilihan OSIS (Mode Kandidat Individu) RESMI DIAKHIRI oleh admin. Pengurus Inti Terpilih: {$winnerDesc}.",
+            );
+        } else {
+            $winnerTitle = $this->winner ? "Paslon No. {$this->winner->number_order} ({$this->winner->chairman_name} & {$this->winner->vice_chairman_name})" : 'Belum ada suara';
+
+            SystemLog::record(
+                SystemLog::TYPE_SESSION_CLOSED,
+                "Sesi pemilihan OSIS RESMI DIAKHIRI oleh admin. Paslon Pemenang: {$winnerTitle}.",
+            );
+        }
 
         $this->showFinalizeConfirm = false;
         unset($this->setting);
         unset($this->winner);
-        $this->flash('Sesi pemilihan resmi diakhiri dan Paslon Pemenang Terpilih telah diumumkan!', 'success');
+        unset($this->leaderboard);
+        unset($this->rankedCandidates);
+        $this->flash('Sesi pemilihan resmi diakhiri dan Hasil Akhir Pemilihan telah diumumkan!', 'success');
     }
 
     public function reopenElection(): void
@@ -433,6 +471,8 @@ class Dashboard extends Component
 
         unset($this->setting);
         unset($this->winner);
+        unset($this->leaderboard);
+        unset($this->rankedCandidates);
         $this->flash('Status finalisasi dibuka kembali. Anda dapat mengaktifkan kembali bilik suara.', 'success');
     }
 

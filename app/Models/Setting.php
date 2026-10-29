@@ -8,6 +8,7 @@ class Setting extends Model
 {
     protected $fillable = [
         'session_name',
+        'voting_mode',
         'election_period',
         'is_voting_open',
         'opened_at',
@@ -30,6 +31,16 @@ class Setting extends Model
     public function getElectionPeriodAttribute($value): string
     {
         return $value ?: 'Periode 2025/2026';
+    }
+
+    public function isKandidatMode(): bool
+    {
+        return ($this->voting_mode ?? 'paslon') === 'kandidat';
+    }
+
+    public function isPaslonMode(): bool
+    {
+        return ! $this->isKandidatMode();
     }
 
     /**
