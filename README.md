@@ -362,7 +362,3 @@ Daftar berkas pengujian:
 - `tests/Feature/StudentImportTest.php`: Pengujian import CSV DPT massal, validasi delimiter, dan pencegahan duplikasi NIS.
 
 ---
-
-## 📄 Hak Cipta & Lisensi
-
-Aplikasi E-Voting OSIS ini dikembangkan untuk kebutuhan pemilihan pengurus OSIS di lingkungan **SMK An-Nurmaniyah Tangerang**. Dilindungi hak cipta untuk kepentingan internal sekolah.
