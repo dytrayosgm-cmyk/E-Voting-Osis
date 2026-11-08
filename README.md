@@ -1,4 +1,4 @@
-# E-Voting OSIS — SMK An-Nurmaniyah
+# E-Voting OSIS 
 
 [![Laravel Version](https://img.shields.io/badge/Laravel-13.x-red.svg?style=flat-square&logo=laravel)](https://laravel.com)
 [![Livewire Version](https://img.shields.io/badge/Livewire-4.x-pink.svg?style=flat-square&logo=livewire)](https://livewire.laravel.com)
